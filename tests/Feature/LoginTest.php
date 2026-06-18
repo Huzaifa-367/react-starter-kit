@@ -9,6 +9,7 @@ use App\Models\MagicLink;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\URL;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
@@ -70,6 +71,45 @@ class LoginTest extends TestCase
             'status' => 'success',
             'ip_address' => '127.0.0.1',
         ]);
+    }
+
+    /** @test */
+    public function admin_without_subscription_redirected_to_admin_dashboard()
+    {
+        Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Super Admin');
+
+        $response = $this->post('/login', [
+            'email' => 'admin@example.com',
+            'password' => 'password',
+        ]);
+
+        $response->assertRedirect('/admin/dashboard');
+    }
+
+    /** @test */
+    public function admin_can_access_admin_dashboard_without_subscription()
+    {
+        Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Super Admin');
+
+        $response = $this->actingAs($admin)->get('/admin/dashboard');
+
+        $response->assertOk();
     }
 
     /** @test */

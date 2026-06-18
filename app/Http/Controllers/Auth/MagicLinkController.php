@@ -116,11 +116,12 @@ class MagicLinkController extends Controller
         // Authenticate
         Auth::login($user);
 
-        // Subscription check
-        if (!$user->hasValidSubscription()) {
+        if ($user->requiresSubscription()) {
             return redirect()->route('pricing');
         }
 
-        return redirect()->intended('/dashboard');
+        $destination = $user->defaultAuthenticatedPath();
+
+        return redirect()->intended($destination);
     }
 }

@@ -4,8 +4,10 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Laravel\Fortify\Features;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -17,6 +19,26 @@ class AuthenticationTest extends TestCase
         $response = $this->get(route('login'));
 
         $response->assertOk();
+    }
+
+    public function test_admin_without_subscription_is_redirected_to_admin_dashboard()
+    {
+        Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+
+        $admin = User::factory()->create([
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Super Admin');
+
+        $response = $this->post(route('login.store'), [
+            'email' => 'admin@example.com',
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect('/admin/dashboard');
     }
 
     public function test_users_can_authenticate_using_the_login_screen()

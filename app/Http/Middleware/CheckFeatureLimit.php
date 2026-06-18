@@ -20,8 +20,7 @@ class CheckFeatureLimit
             return $next($request);
         }
 
-        // Bypass limits for admin roles
-        if ($user->hasRole(['Super Admin', 'Admin'])) {
+        if ($user->isStaff()) {
             return $next($request);
         }
 

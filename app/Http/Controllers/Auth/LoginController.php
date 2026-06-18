@@ -108,7 +108,7 @@ class LoginController extends Controller
         ]);
 
         // Audit log if admin
-        if ($user->hasRole('Admin') || $user->hasRole('Super Admin')) {
+        if ($user->isStaff()) {
             AuditLogger::log('admin.login', $user);
         }
 
@@ -128,12 +128,13 @@ class LoginController extends Controller
             return redirect()->route('verification.otp', ['purpose' => 'login_2fa']);
         }
 
-        // Check subscription
-        if (!$user->hasValidSubscription()) {
+        if ($user->requiresSubscription()) {
             return redirect()->route('pricing');
         }
 
-        return redirect()->intended('/dashboard');
+        $destination = $user->defaultAuthenticatedPath();
+
+        return redirect()->intended($destination);
     }
 
     /**

@@ -14,6 +14,16 @@ class SetSecurityHeaders
     public function handle(Request $request, Closure $next): Response
     {
         $response = $next($request);
+        $isLocal = app()->environment(['local', 'development', 'testing']);
+        $viteHttp = " http://127.0.0.1:5173 http://localhost:5173";
+        $viteWs = " ws://127.0.0.1:5173 ws://localhost:5173";
+        $csp = "default-src 'self'; "
+            ."script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com".($isLocal ? $viteHttp : '')."; "
+            ."style-src 'self' 'unsafe-inline' https://fonts.googleapis.com".($isLocal ? $viteHttp : '')."; "
+            ."font-src 'self' https://fonts.gstatic.com".($isLocal ? $viteHttp : '')."; "
+            ."frame-src 'self' https://js.stripe.com; "
+            ."connect-src 'self' https://api.stripe.com".($isLocal ? $viteHttp.$viteWs : '')."; "
+            ."img-src 'self' data:".($isLocal ? $viteHttp : '').";";
 
         if (method_exists($response, 'header')) {
             $response->header('X-Frame-Options', 'SAMEORIGIN');
@@ -22,7 +32,7 @@ class SetSecurityHeaders
             $response->header('Referrer-Policy', 'strict-origin-when-cross-origin');
             $response->header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             $response->header('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
-            $response->header('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://js.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data:;");
+            $response->header('Content-Security-Policy', $csp);
         } else {
             $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
             $response->headers->set('X-Content-Type-Options', 'nosniff');
@@ -30,7 +40,7 @@ class SetSecurityHeaders
             $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
             $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
             $response->headers->set('Permissions-Policy', 'geolocation=(), camera=(), microphone=()');
-            $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src 'self' https://js.stripe.com; connect-src 'self' https://api.stripe.com; img-src 'self' data:;");
+            $response->headers->set('Content-Security-Policy', $csp);
         }
 
         return $response;

@@ -42,15 +42,17 @@
         <meta name="apple-mobile-web-app-title" content="SaaS Starter">
         <link rel="apple-touch-icon" href="/icons/icon-192.png">
 
-        <script>
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/sw.js')
-                        .then(reg => console.log('PWA Service Worker registered successfully.', reg))
-                        .catch(err => console.error('PWA Service Worker registration failed.', err));
-                });
-            }
-        </script>
+        @if (app()->environment('production'))
+            <script>
+                if ('serviceWorker' in navigator) {
+                    window.addEventListener('load', () => {
+                        navigator.serviceWorker.register('/sw.js')
+                            .then(reg => console.log('PWA Service Worker registered successfully.', reg))
+                            .catch(err => console.error('PWA Service Worker registration failed.', err));
+                    });
+                }
+            </script>
+        @endif
 
         @fonts
 

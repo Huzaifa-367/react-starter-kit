@@ -20,8 +20,7 @@ class VerifyActiveSubscription
             return $next($request);
         }
 
-        // Skip check for Admins and Super Admins
-        if ($user->hasRole(['Super Admin', 'Admin'])) {
+        if ($user->isStaff()) {
             return $next($request);
         }
 

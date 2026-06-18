@@ -1,26 +1,25 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import {
+    Activity,
+    AlertCircle,
+    ArrowRight,
+    CreditCard,
+    HeartPulse,
+    Sliders,
+    TrendingUp,
+    UserPlus,
+    Users,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
     Card,
     CardContent,
     CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-    Users,
-    CreditCard,
-    TrendingUp,
-    AlertCircle,
-    Activity,
-    Sliders,
-    ArrowRight,
-    UserPlus,
-    Clock,
-    Terminal,
-} from 'lucide-react';
 
 interface Props {
     stats?: {

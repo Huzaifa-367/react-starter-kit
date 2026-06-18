@@ -97,7 +97,13 @@ class OtpController extends Controller
                     $user->onboarding->update(['step_email_verified' => true]);
                 }
 
-                return redirect()->route('pricing');
+                if ($user->requiresSubscription()) {
+                    return redirect()->route('pricing');
+                }
+
+                $destination = $user->defaultAuthenticatedPath();
+
+                return redirect()->intended($destination);
 
             case 'phone_verify':
                 $user->phone_verified_at = now();
@@ -111,7 +117,14 @@ class OtpController extends Controller
 
             case 'login_2fa':
                 session()->put('2fa_verified', true);
-                return redirect()->intended('/dashboard');
+
+                if ($user->requiresSubscription()) {
+                    return redirect()->route('pricing');
+                }
+
+                $destination = $user->defaultAuthenticatedPath();
+
+                return redirect()->intended($destination);
 
             case 'password_reset':
                 return redirect()->route('password.reset.form', [

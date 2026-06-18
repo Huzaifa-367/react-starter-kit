@@ -40,11 +40,20 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // Skip webhooks, Stripe APIs, and Inertia backend posts
+  // Skip dynamic/authenticated routes to avoid stale authenticated UI states
   if (
     url.pathname.startsWith('/stripe') ||
     url.pathname.startsWith('/api') ||
-    url.pathname.startsWith('/admin')
+    url.pathname.startsWith('/admin') ||
+    url.pathname.startsWith('/auth') ||
+    url.pathname.startsWith('/dashboard') ||
+    url.pathname.startsWith('/billing') ||
+    url.pathname.startsWith('/profile') ||
+    url.pathname.startsWith('/settings') ||
+    url.pathname.startsWith('/notifications') ||
+    url.pathname.startsWith('/login') ||
+    url.pathname.startsWith('/register') ||
+    url.pathname.startsWith('/pricing')
   ) {
     return;
   }

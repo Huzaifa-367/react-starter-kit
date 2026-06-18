@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Queue;
 use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Http\JsonResponse;
+use Throwable;
 
 class SystemHealthController extends Controller
 {
@@ -24,7 +25,7 @@ class SystemHealthController extends Controller
         $dbError = null;
         try {
             DB::connection()->getPdo();
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             $dbStatus = 'failed';
             $dbError = $e->getMessage();
         }
@@ -32,11 +33,17 @@ class SystemHealthController extends Controller
         // 2. Redis Check
         $redisStatus = 'ok';
         $redisError = null;
-        try {
-            Redis::connection()->ping();
-        } catch (\Exception $e) {
-            $redisStatus = 'failed';
-            $redisError = $e->getMessage();
+        $redisClient = (string) config('database.redis.client', 'phpredis');
+        if ($redisClient === 'phpredis' && !extension_loaded('redis')) {
+            $redisStatus = 'warning';
+            $redisError = 'PHP Redis extension is not installed. Set REDIS_CLIENT=predis or install ext-redis.';
+        } else {
+            try {
+                Redis::connection()->ping();
+            } catch (Throwable $e) {
+                $redisStatus = 'failed';
+                $redisError = $e->getMessage();
+            }
         }
 
         // 3. Cache Check
@@ -47,7 +54,7 @@ class SystemHealthController extends Controller
             if (Cache::get('health_check_ping') !== 'pong') {
                 throw new \Exception("Cache read/write mismatch.");
             }
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             $cacheStatus = 'failed';
             $cacheError = $e->getMessage();
         }
@@ -56,11 +63,21 @@ class SystemHealthController extends Controller
         $queueStatus = 'ok';
         $queueSize = 0;
         $queueError = null;
-        try {
-            $queueSize = Queue::size();
-        } catch (\Exception $e) {
-            $queueStatus = 'failed';
-            $queueError = $e->getMessage();
+        $queueConnection = (string) config('queue.default', 'sync');
+        if (
+            $queueConnection === 'redis' &&
+            $redisClient === 'phpredis' &&
+            !extension_loaded('redis')
+        ) {
+            $queueStatus = 'warning';
+            $queueError = 'Redis queue driver requires ext-redis when REDIS_CLIENT=phpredis. Set REDIS_CLIENT=predis or install ext-redis.';
+        } else {
+            try {
+                $queueSize = Queue::size();
+            } catch (Throwable $e) {
+                $queueStatus = 'failed';
+                $queueError = $e->getMessage();
+            }
         }
 
         // 5. Disk Check
@@ -75,7 +92,7 @@ class SystemHealthController extends Controller
             if ($diskUsage > 90) {
                 $diskStatus = 'warning';
             }
-        } catch (\Exception $e) {
+        } catch (Throwable $e) {
             $diskStatus = 'failed';
         }
 

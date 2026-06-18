@@ -3,6 +3,14 @@
 use Illuminate\Support\Str;
 use Pdo\Mysql;
 
+$redisClient = env('REDIS_CLIENT');
+if ($redisClient === 'phpredis' && !extension_loaded('redis')) {
+    $redisClient = 'predis';
+}
+if (!$redisClient) {
+    $redisClient = extension_loaded('redis') ? 'phpredis' : 'predis';
+}
+
 return [
 
     /*
@@ -145,7 +153,7 @@ return [
 
     'redis' => [
 
-        'client' => env('REDIS_CLIENT', 'phpredis'),
+        'client' => $redisClient,
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),

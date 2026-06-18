@@ -156,4 +156,19 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->hasMany(PasswordHistory::class);
     }
+
+    public function isStaff(): bool
+    {
+        return $this->hasRole(['Super Admin', 'Admin']);
+    }
+
+    public function requiresSubscription(): bool
+    {
+        return !$this->isStaff() && !$this->hasValidSubscription();
+    }
+
+    public function defaultAuthenticatedPath(): string
+    {
+        return $this->isStaff() ? '/admin/dashboard' : '/dashboard';
+    }
 }

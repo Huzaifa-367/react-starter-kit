@@ -91,11 +91,12 @@ class SocialAuthController extends Controller
 
         AuditLogger::log('user.login.social', $user);
 
-        // Check subscription
-        if (!$user->hasValidSubscription()) {
+        if ($user->requiresSubscription()) {
             return redirect()->route('pricing');
         }
 
-        return redirect()->intended('/dashboard');
+        $destination = $user->defaultAuthenticatedPath();
+
+        return redirect()->intended($destination);
     }
 }

@@ -1,5 +1,17 @@
 <?php
 
+$defaultQueueConnection = env('QUEUE_CONNECTION', 'database');
+if ($defaultQueueConnection === 'redis') {
+    $redisHost = (string) env('REDIS_HOST', '127.0.0.1');
+    $redisPort = (int) env('REDIS_PORT', 6379);
+    $redisSocket = @fsockopen($redisHost, $redisPort, $errno, $errstr, 0.2);
+    if ($redisSocket === false) {
+        $defaultQueueConnection = 'database';
+    } else {
+        fclose($redisSocket);
+    }
+}
+
 return [
 
     /*
@@ -13,7 +25,7 @@ return [
     |
     */
 
-    'default' => env('QUEUE_CONNECTION', 'database'),
+    'default' => $defaultQueueConnection,
 
     /*
     |--------------------------------------------------------------------------
