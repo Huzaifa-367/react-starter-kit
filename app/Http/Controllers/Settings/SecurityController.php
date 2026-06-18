@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\TwoFactorAuthenticationRequest;
+use App\Rules\StrongPassword;
+use App\Services\PasswordHistoryService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Laravel\Fortify\Features;
@@ -19,10 +22,7 @@ class SecurityController extends Controller
     public function edit(TwoFactorAuthenticationRequest $request): Response
     {
         $props = [
-            /* @chisel-2fa */
             'canManageTwoFactor' => Features::canManageTwoFactorAuthentication(),
-            /* @end-chisel-2fa */
-            /* @chisel-passkeys */
             'canManagePasskeys' => Features::canManagePasskeys(),
             'passkeys' => Features::canManagePasskeys()
                 ? $request->user()
@@ -40,18 +40,15 @@ class SecurityController extends Controller
                     ->values()
                     ->all()
                 : [],
-            /* @end-chisel-passkeys */
-            'passwordRules' => Password::defaults()->toPasswordRulesString(),
+            'passwordRules' => \Illuminate\Validation\Rules\Password::defaults()->toPasswordRulesString(),
         ];
 
-        /* @chisel-2fa */
         if (Features::canManageTwoFactorAuthentication()) {
             $request->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $request->user()->hasEnabledTwoFactorAuthentication();
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
-        /* @end-chisel-2fa */
 
         return Inertia::render('settings/security', $props);
     }
@@ -61,9 +58,28 @@ class SecurityController extends Controller
      */
     public function update(PasswordUpdateRequest $request): RedirectResponse
     {
-        $request->user()->update([
-            'password' => $request->password,
+        $user = $request->user();
+
+        // Enforce StrongPassword validation on the new password
+        $request->validate([
+            'password' => [new StrongPassword()],
         ]);
+
+        // Check password reuse history
+        $passwordHistoryService = new PasswordHistoryService();
+        if ($passwordHistoryService->check($user, $request->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['You cannot reuse any of your last 5 passwords.'],
+            ]);
+        }
+
+        // Hash and update the password
+        $user->update([
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Record in password history
+        $passwordHistoryService->record($user, $user->password);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Password updated.')]);
 

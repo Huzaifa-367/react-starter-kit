@@ -5,6 +5,11 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
+use App\Models\Setting;
+use App\Models\User;
+use App\Models\UserNotification;
+use Illuminate\Support\Facades\Cache;
+
 class HandleInertiaRequests extends Middleware
 {
     /**
@@ -35,12 +40,79 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
+        // Eager load roles and onboarding if logged in
+        if ($user) {
+            $user->loadMissing(['roles', 'onboarding']);
+        }
+
+        // Cache app branding settings for 24 hours
+        $branding = Cache::remember('app_branding', 86400, function () {
+            return [
+                'appName' => Setting::get('brand_app_name', config('app.name', 'SaaS App')),
+                'logoUrl' => Setting::get('brand_logo_url', '/images/logo.png'),
+                'faviconUrl' => Setting::get('brand_favicon_url', '/favicon.ico'),
+                'primaryColor' => Setting::get('brand_primary_color', '#4F46E5'),
+                'supportEmail' => Setting::get('brand_support_email', 'support@example.com'),
+                'footerText' => Setting::get('brand_footer_text', '© ' . date('Y') . ' SaaS App'),
+            ];
+        });
+
+        // Flash messages
+        $flash = [
+            'success' => $request->session()->get('success'),
+            'error' => $request->session()->get('error'),
+            'status' => $request->session()->get('status'),
+        ];
+
+        // Impersonation info
+        $isImpersonating = $request->session()->has('impersonating_admin_id');
+        $impersonatingAs = null;
+        if ($isImpersonating) {
+            $impersonatingAs = User::find($request->session()->get('impersonating_admin_id'))?->name;
+        }
+
+        // Unread notifications count (cache for 60s)
+        $unreadCount = 0;
+        if ($user) {
+            $unreadCount = Cache::remember("user:{$user->id}:unread_count", 60, function () use ($user) {
+                return UserNotification::where('user_id', $user->id)
+                    ->whereNull('read_at')
+                    ->count();
+            });
+        }
+
+        // Announcement banner info
+        $announcement = [
+            'text' => Setting::get('announcement_text'),
+            'type' => Setting::get('announcement_type', 'info'),
+            'active' => (bool) Setting::get('announcement_active', false),
+            'dismissible' => (bool) Setting::get('announcement_dismissible', true),
+        ];
+
+        // Terms of Service info
+        $tosVersion = Setting::get('tos_version', 'v1.0');
+        $tos = [
+            'acceptance_required' => $user ? ($tosVersion !== $user->terms_version_accepted) : false,
+            'tos_url' => Setting::get('tos_url', '#'),
+            'privacy_url' => Setting::get('privacy_url', '#'),
+        ];
+
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            'name' => $branding['appName'],
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'branding' => $branding,
+            'onboarding' => $user ? $user->onboarding : null,
+            'announcement' => $announcement,
+            'tos' => $tos,
+            'flash' => $flash,
+            'is_impersonating' => $isImpersonating,
+            'impersonating_as' => $impersonatingAs,
+            'unread_notifications' => $unreadCount,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

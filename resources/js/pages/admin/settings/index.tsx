@@ -1,0 +1,200 @@
+import React, { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import Heading from '@/components/heading';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardFooter,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Sliders, Mail, Smartphone, CreditCard, Bell, Sparkles, Loader2, Save } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface SettingItem {
+    id: number;
+    key: string;
+    value: string | null;
+    type: string;
+    group: string;
+    label: string;
+    is_encrypted: boolean;
+    is_public: boolean;
+}
+
+interface Props {
+    settings: Record<string, SettingItem[]>;
+}
+
+export default function SettingsIndex({ settings }: Props) {
+    const groups = Object.keys(settings);
+    const [activeGroup, setActiveGroup] = useState<string>(groups[0] || 'app');
+
+    // Flatten settings to construct initial form values
+    const initialValues: Record<string, string> = {};
+    Object.values(settings).forEach((groupSettings) => {
+        groupSettings.forEach((setting) => {
+            initialValues[setting.key] = setting.value || '';
+        });
+    });
+
+    const form = useForm({
+        settings: initialValues,
+    });
+
+    const handleValueChange = (key: string, value: string) => {
+        form.setData('settings', {
+            ...form.data.settings,
+            [key]: value,
+        });
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        form.post('/admin/settings', {
+            onSuccess: () => {
+                toast.success('System settings updated and configuration refreshed!');
+            },
+            onError: (err) => {
+                toast.error(Object.values(err)[0] as string || 'Failed to update settings.');
+            },
+        });
+    };
+
+    const getGroupIcon = (group: string) => {
+        switch (group.toLowerCase()) {
+            case 'mail':
+            case 'smtp':
+                return <Mail className="h-4 w-4" />;
+            case 'twilio':
+            case 'sms':
+                return <Smartphone className="h-4 w-4" />;
+            case 'stripe':
+            case 'billing':
+                return <CreditCard className="h-4 w-4" />;
+            case 'firebase':
+            case 'fcm':
+                return <Bell className="h-4 w-4" />;
+            case 'branding':
+                return <Sparkles className="h-4 w-4" />;
+            default:
+                return <Sliders className="h-4 w-4" />;
+        }
+    };
+
+    const getGroupLabel = (group: string) => {
+        switch (group.toLowerCase()) {
+            case 'mail':
+                return 'Email SMTP';
+            case 'fcm':
+                return 'Push (FCM)';
+            default:
+                return group.charAt(0).toUpperCase() + group.slice(1) + ' Settings';
+        }
+    };
+
+    return (
+        <>
+            <Head title="System Settings" />
+
+            <div className="flex-1 space-y-6 p-6">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">System Settings</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Global SaaS integration variables, API credentials, and email credentials.
+                    </p>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+                    {/* Left: Tab list */}
+                    <Card className="border border-border lg:col-span-1">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-base font-bold">Categories</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-1">
+                            {groups.map((group) => (
+                                <button
+                                    key={group}
+                                    type="button"
+                                    onClick={() => setActiveGroup(group)}
+                                    className={`w-full flex items-center gap-2.5 p-3 rounded-xl text-left text-sm font-semibold transition-all cursor-pointer ${
+                                        activeGroup === group
+                                            ? 'bg-primary text-primary-foreground shadow-xs'
+                                            : 'text-muted-foreground hover:bg-muted/10 hover:text-foreground'
+                                    }`}
+                                >
+                                    {getGroupIcon(group)}
+                                    <span>{getGroupLabel(group)}</span>
+                                </button>
+                            ))}
+                        </CardContent>
+                    </Card>
+
+                    {/* Right: Settings Fields Form */}
+                    <Card className="border border-border lg:col-span-3">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-bold">
+                                {getGroupLabel(activeGroup)}
+                            </CardTitle>
+                            <CardDescription>
+                                Modify credential configs. Secrets are masked with dots.
+                            </CardDescription>
+                        </CardHeader>
+
+                        <form onSubmit={handleSubmit}>
+                            <CardContent className="space-y-6">
+                                {(settings[activeGroup] || []).map((setting) => (
+                                    <div key={setting.id} className="grid gap-2">
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor={`sett-${setting.key}`}>{setting.label}</Label>
+                                            {setting.is_encrypted && (
+                                                <Badge variant="outline" className="text-[9px] font-mono py-0 text-emerald-500 border-emerald-500/10">
+                                                    Encrypted
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <Input
+                                            id={`sett-${setting.key}`}
+                                            type={setting.type === 'secret' ? 'password' : 'text'}
+                                            value={form.data.settings[setting.key]}
+                                            onChange={(e) => handleValueChange(setting.key, e.target.value)}
+                                            disabled={form.processing}
+                                            className="max-w-xl font-mono text-sm"
+                                        />
+                                    </div>
+                                ))}
+                            </CardContent>
+                            <CardFooter className="border-t border-border pt-4 pb-4 flex justify-between bg-muted/20">
+                                <span className="text-xs text-muted-foreground">
+                                    SMTP config changes will execute a runtime connection test to verify.
+                                </span>
+                                <Button type="submit" disabled={form.processing} className="cursor-pointer">
+                                    {form.processing ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Save className="mr-2 h-4 w-4" />
+                                    )}
+                                    Save Configurations
+                                </Button>
+                            </CardFooter>
+                        </form>
+                    </Card>
+                </div>
+            </div>
+        </>
+    );
+}
+
+SettingsIndex.layout = {
+    breadcrumbs: [
+        {
+            title: 'System Settings',
+            href: '/admin/settings',
+        },
+    ],
+};

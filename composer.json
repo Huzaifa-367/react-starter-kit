@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "laravel/react-subscription",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
     "keywords": [
@@ -10,12 +10,25 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "barryvdh/laravel-dompdf": "^3.1",
+        "devkandil/notifire": "^1.2",
+        "guzzlehttp/guzzle": "^7.12",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",
         "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.7",
+        "laravel/horizon": "^5.47",
+        "laravel/socialite": "^5.28",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "laravel/wayfinder": "^0.1.14",
+        "masterix21/laravel-entitlements": "^1.1",
+        "offload-project/laravel-invite-only": "^2.5",
+        "predis/predis": "^3.5",
+        "revoltify/subscriptionify": "^1.0",
+        "spatie/laravel-backup": "^10.3",
+        "spatie/laravel-permission": "^8.0",
+        "stripe/stripe-php": "^20.2",
+        "twilio/sdk": "^8.11"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -80,7 +93,6 @@
             "@php artisan package:discover --ansi"
         ],
         "post-update-cmd": [
-            "@php artisan install:features --ansi",
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ],
         "post-root-package-install": [
@@ -100,7 +112,6 @@
             "dont-discover": [],
             "installer": {
                 "post-create-project": [
-                    "@php artisan install:features --ansi"
                 ]
             }
         }

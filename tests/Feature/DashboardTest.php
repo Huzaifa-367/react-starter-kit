@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
 class DashboardTest extends TestCase
@@ -18,10 +19,12 @@ class DashboardTest extends TestCase
 
     public function test_authenticated_users_can_visit_the_dashboard()
     {
+        // Create an Admin role so the subscription middleware is bypassed
+        $role = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
         $user = User::factory()->create();
-        $this->actingAs($user);
+        $user->assignRole($role);
 
-        $response = $this->get(route('dashboard'));
+        $response = $this->actingAs($user)->get(route('dashboard'));
         $response->assertOk();
     }
 }

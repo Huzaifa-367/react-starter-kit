@@ -1,0 +1,25 @@
+{
+  "name": "SaaS Subscription Starter Kit",
+  "short_name": "SaaS Starter",
+  "description": "Premium Laravel SaaS Subscription Starter Kit app with offline fallbacks.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#4F46E5",
+  "background_color": "#1e1b4b",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

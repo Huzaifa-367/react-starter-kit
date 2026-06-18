@@ -18,9 +18,30 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            \App\Http\Middleware\SetSecurityHeaders::class,
+            \App\Http\Middleware\SanitizeInput::class,
+            \App\Http\Middleware\IpFirewall::class,
+            \App\Http\Middleware\LoadSettingsFromDatabase::class,
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\EnsureNotSuspended::class,
+            \App\Http\Middleware\TrackImpersonation::class,
+
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'stripe/webhook',
+            'webhooks/email/bounce',
+        ]);
+
+        $middleware->alias([
+            'subscribed' => \App\Http\Middleware\VerifyActiveSubscription::class,
+            'feature' => \App\Http\Middleware\CheckFeatureLimit::class,
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'verified-tos' => \App\Http\Middleware\VerifyTosAccepted::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
