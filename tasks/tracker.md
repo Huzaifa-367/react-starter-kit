@@ -2784,8 +2784,8 @@ Execute tasks in this order to respect dependencies:
 - [x] 33. Build Profile pages: edit, phone, two-factor, sessions, login-history, security, referrals
 - [x] 34. Build Dashboard page (with onboarding checklist)
 - [x] 35. Build Admin Layout
-- [ ] 36. Build Admin pages (all 20+)
-- [ ] 37. Build PWA files: manifest.json, sw.js, icons
-- [ ] 38. Write Tests (7 test classes)
-- [ ] 39. Run: php artisan test
-- [ ] 40. Run: php artisan horizon
+- [x] 36. Build Admin pages (all 20+)
+- [x] 37. Build PWA files: manifest.json, sw.js, icons
+- [x] 38. Write Tests (7 test classes)
+- [x] 39. Run: php artisan test
+- [x] 40. Run: php artisan horizon

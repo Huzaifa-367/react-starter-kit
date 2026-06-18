@@ -88,10 +88,24 @@ export default function SegmentsIndex({ segments }: Props) {
     };
 
     const handleDelete = (id: number) => {
-        if (!confirm('Are you sure you want to delete this segment?')) return;
-        router.delete(`/admin/segments/${id}`, {
-            onSuccess: () => toast.success('Segment deleted successfully.'),
-        });
+        if (!confirm('Are you sure you want to delete this segment?')) {
+            return;
+        } else {
+            router.delete(`/admin/segments/${id}`, {
+                onSuccess: () => toast.success('Segment deleted successfully.'),
+            });
+        }
+    };
+
+    const handleNotify = (id: number) => {
+        if (!confirm('Send notification to all users in this segment now?')) {
+            return;
+        } else {
+            router.post(`/admin/segments/${id}/notify`, {}, {
+                onSuccess: () => toast.success('Segment notification dispatched successfully.'),
+                onError: () => toast.error('Failed to dispatch segment notification.'),
+            });
+        }
     };
 
     return (
@@ -163,11 +177,14 @@ export default function SegmentsIndex({ segments }: Props) {
                                                             <Download className="h-3 w-3 mr-1" /> Export CSV
                                                         </Button>
                                                     </a>
-                                                    <Link href={`/admin/segments/${seg.id}/notify`} className="inline-block">
-                                                        <Button variant="outline" size="sm" className="h-8 text-xs cursor-pointer">
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleNotify(seg.id)}
+                                                        className="h-8 text-xs cursor-pointer"
+                                                    >
                                                             <Bell className="h-3 w-3 mr-1" /> Notify
-                                                        </Button>
-                                                    </Link>
+                                                    </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
