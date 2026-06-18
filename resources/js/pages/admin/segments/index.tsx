@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/dialog';
 import { Filter, Plus, Trash2, Download, Bell, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { apiPost } from '@/lib/api';
 
 interface SegmentItem {
     id: number;
@@ -64,10 +64,10 @@ export default function SegmentsIndex({ segments }: Props) {
     const handlePreview = async () => {
         setPreviewing(true);
         try {
-            const response = await axios.post('/admin/segments/preview', {
+            const { data } = await apiPost<{ count: number }>('/admin/segments/preview', {
                 filters: form.data.filters,
             });
-            setPreviewCount(response.data.count);
+            setPreviewCount(data.count);
         } catch (error) {
             toast.error('Failed to preview matches.');
         } finally {

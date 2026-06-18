@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Loader2, Sparkles, AlertCircle } from 'lucide-react';
-import axios from 'axios';
+import { apiPost } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface Props {
@@ -84,11 +84,16 @@ export default function Pricing({ plans, activeSubscription }: Props) {
             setProrationDetails(null);
 
             try {
-                const response = await axios.post('/billing/proration-preview', {
+                const { data } = await apiPost<{
+                    credit_applied: string;
+                    new_charge: string;
+                    total_due_today: string;
+                    next_billing_date: string;
+                }>('/billing/proration-preview', {
                     plan_id: plan.id,
                     billing_cycle: plan.billing_period === 'year' ? 'yearly' : 'monthly',
                 });
-                setProrationDetails(response.data);
+                setProrationDetails(data);
             } catch (error: any) {
                 console.error(error);
                 toast.error(error.response?.data?.error || 'Failed to fetch proration details.');
@@ -102,15 +107,15 @@ export default function Pricing({ plans, activeSubscription }: Props) {
         // No active subscription: Create Stripe Checkout Session
         setCheckoutLoading(plan.id);
         try {
-            const response = await axios.post('/billing/checkout', {
+            const { data } = await apiPost<{ checkout_url?: string; redirect?: string }>('/billing/checkout', {
                 plan_id: plan.id,
                 billing_cycle: plan.billing_period === 'year' ? 'yearly' : 'monthly',
             });
 
-            if (response.data.checkout_url) {
-                window.location.href = response.data.checkout_url;
-            } else if (response.data.redirect) {
-                router.visit(response.data.redirect);
+            if (data.checkout_url) {
+                window.location.href = data.checkout_url;
+            } else if (data.redirect) {
+                router.visit(data.redirect);
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Checkout session failed.');

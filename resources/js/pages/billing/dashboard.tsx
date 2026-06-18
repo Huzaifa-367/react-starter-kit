@@ -22,7 +22,7 @@ import {
     Download,
     FileText,
 } from 'lucide-react';
-import axios from 'axios';
+import { apiPost } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface UsageItem {
@@ -55,9 +55,9 @@ export default function BillingDashboard({ subscription, usages, invoices }: Pro
     const handleStripePortal = async () => {
         setPortalLoading(true);
         try {
-            const response = await axios.post('/billing/portal');
-            if (response.data.portal_url) {
-                window.location.href = response.data.portal_url;
+            const { data } = await apiPost<{ portal_url?: string }>('/billing/portal');
+            if (data.portal_url) {
+                window.location.href = data.portal_url;
             }
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Could not open billing portal.');

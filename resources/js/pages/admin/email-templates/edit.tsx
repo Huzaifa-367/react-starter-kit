@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import { ArrowLeft, Loader2, Play, Send, RefreshCw, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-import axios from 'axios';
+import { apiGet, apiPost } from '@/lib/api';
 
 interface Template {
     id: number;
@@ -58,9 +58,8 @@ export default function TemplateEdit({ template }: Props) {
     const fetchPreview = async () => {
         setPreviewLoading(true);
         try {
-            // Get preview from backend
-            const response = await axios.get(`/admin/email-templates/${template.id}/preview`);
-            setPreviewHtml(response.data.html);
+            const { data } = await apiGet<{ html: string }>(`/admin/email-templates/${template.id}/preview`);
+            setPreviewHtml(data.html);
         } catch (error) {
             toast.error('Failed to generate template preview.');
         } finally {
@@ -73,10 +72,10 @@ export default function TemplateEdit({ template }: Props) {
         if (!testEmail) return;
         setTestingEmail(true);
         try {
-            const response = await axios.post(`/admin/email-templates/${template.id}/test`, {
+            const { data } = await apiPost<{ message?: string }>(`/admin/email-templates/${template.id}/test`, {
                 email: testEmail,
             });
-            toast.success(response.data.message || 'Test email sent successfully!');
+            toast.success(data.message || 'Test email sent successfully!');
         } catch (error: any) {
             toast.error(error.response?.data?.error || 'Failed to send test email.');
         } finally {

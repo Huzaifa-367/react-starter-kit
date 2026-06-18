@@ -27,8 +27,15 @@ import {
     Send,
     Plus,
     Trash2,
+    Shield,
+    Loader2,
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface RoleItem {
+    id: number;
+    name: string;
+}
 
 interface Props {
     user: any;
@@ -39,6 +46,7 @@ interface Props {
     userNotes: any[];
     credits: any[];
     loginHistory: any[];
+    allRoles: RoleItem[];
 }
 
 export default function UserShow({
@@ -50,10 +58,42 @@ export default function UserShow({
     userNotes,
     credits,
     loginHistory,
+    allRoles,
 }: Props) {
-    const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'notes' | 'notifications'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'activity' | 'notes' | 'notifications' | 'roles'>('overview');
     const [noteContent, setNoteContent] = useState('');
     const [addingNote, setAddingNote] = useState(false);
+
+    // Role assignment state
+    const currentRoleIds = (user.roles as RoleItem[]).map((r) => r.id);
+    const [selectedRoles, setSelectedRoles] = useState<number[]>(currentRoleIds);
+    const [savingRoles, setSavingRoles] = useState(false);
+
+    const toggleRole = (id: number) => {
+        setSelectedRoles((prev) =>
+            prev.includes(id) ? prev.filter((r) => r !== id) : [...prev, id]
+        );
+    };
+
+    const handleSaveRoles = () => {
+        setSavingRoles(true);
+        const roleNames = allRoles
+            .filter((r) => selectedRoles.includes(r.id))
+            .map((r) => r.name);
+        router.post(
+            `/admin/users/${user.id}/assign-role`,
+            { roles: roleNames },
+            {
+                onSuccess: () => {
+                    import('sonner').then(({ toast }) => toast.success('Roles updated successfully.'));
+                },
+                onError: () => {
+                    import('sonner').then(({ toast }) => toast.error('Failed to update roles.'));
+                },
+                onFinish: () => setSavingRoles(false),
+            }
+        );
+    };
 
     const handleAddNote = (e: React.FormEvent) => {
         e.preventDefault();
@@ -107,7 +147,7 @@ export default function UserShow({
 
                 {/* Navigation Tabs */}
                 <div className="flex border-b border-border gap-2 overflow-x-auto pb-px">
-                    {(['overview', 'activity', 'notes', 'notifications'] as const).map((tab) => (
+                    {(['overview', 'activity', 'notes', 'notifications', 'roles'] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -407,6 +447,69 @@ export default function UserShow({
                                         )}
                                     </div>
                                 </CardContent>
+                            </Card>
+                        </div>
+                    )}
+
+                    {activeTab === 'roles' && (
+                        <div className="max-w-2xl">
+                            <Card className="border border-border">
+                                <CardHeader>
+                                    <CardTitle className="text-base font-bold flex items-center gap-2">
+                                        <Shield className="h-5 w-5 text-primary" />
+                                        Role Assignment
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Select the roles to assign to this user. Changes take effect immediately upon saving.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-3">
+                                    {allRoles.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">No roles found. Run the permission seeder first.</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {allRoles.map((role) => {
+                                                const checked = selectedRoles.includes(role.id);
+                                                return (
+                                                    <label
+                                                        key={role.id}
+                                                        className={`flex items-center gap-3 rounded-xl border p-4 cursor-pointer transition-all select-none ${
+                                                            checked
+                                                                ? 'border-primary bg-primary/5 text-foreground'
+                                                                : 'border-border bg-muted/20 text-muted-foreground hover:border-primary/50'
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            className="h-4 w-4 rounded border-gray-300 text-primary accent-primary"
+                                                            checked={checked}
+                                                            onChange={() => toggleRole(role.id)}
+                                                        />
+                                                        <div>
+                                                            <p className="font-semibold text-sm text-foreground">{role.name}</p>
+                                                        </div>
+                                                        {checked && (
+                                                            <Badge className="ml-auto text-[10px] bg-primary/10 text-primary border-primary/20">Active</Badge>
+                                                        )}
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </CardContent>
+                                <CardFooter className="border-t border-border pt-4 flex justify-between items-center">
+                                    <p className="text-xs text-muted-foreground">
+                                        {selectedRoles.length} role{selectedRoles.length !== 1 ? 's' : ''} selected
+                                    </p>
+                                    <Button
+                                        onClick={handleSaveRoles}
+                                        disabled={savingRoles}
+                                        className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                    >
+                                        {savingRoles && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Save Role Changes
+                                    </Button>
+                                </CardFooter>
                             </Card>
                         </div>
                     )}

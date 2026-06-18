@@ -102,8 +102,10 @@ class AdminUserController extends Controller
             'userNotes' => $userNotes,
             'credits' => $credits,
             'loginHistory' => $loginHistory,
+            'allRoles' => Role::all(['id', 'name']),
         ]);
     }
+
 
     /**
      * Suspend a user's account.
