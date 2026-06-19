@@ -23,7 +23,7 @@ class SetSecurityHeaders
             ."font-src 'self' https://fonts.gstatic.com".($isLocal ? $viteHttp : '')."; "
             ."frame-src 'self' https://js.stripe.com; "
             ."connect-src 'self' https://api.stripe.com".($isLocal ? $viteHttp.$viteWs : '')."; "
-            ."img-src 'self' data:".($isLocal ? $viteHttp : '').";";
+            ."img-src 'self' data: https://*.whatsapp.net https://images.unsplash.com".($isLocal ? $viteHttp : '').";";
 
         if (method_exists($response, 'header')) {
             $response->header('X-Frame-Options', 'SAMEORIGIN');

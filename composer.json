@@ -12,6 +12,7 @@
         "php": "^8.3",
         "barryvdh/laravel-dompdf": "^3.1",
         "devkandil/notifire": "^1.2",
+        "green-api/whatsapp-api-client-php": "^0.3.7",
         "guzzlehttp/guzzle": "^7.12",
         "inertiajs/inertia-laravel": "^3.0",
         "laravel/chisel": "^0.1.0",

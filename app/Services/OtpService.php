@@ -47,6 +47,8 @@ class OtpService
         $user->otp_purpose = $purpose;
         $user->save();
 
+        \Illuminate\Support\Facades\Log::info("Generated OTP for {$user->email}: {$code}");
+
         // Save plain OTP in static registry for request lifecycle access (e.g. by NotificationDispatcher)
         self::setPlainOtp($user->id, $code);
 

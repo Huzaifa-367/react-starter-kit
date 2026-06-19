@@ -40,10 +40,10 @@ class TwoFactorChallengeTest extends TestCase
             'password' => 'password',
         ]);
 
-        $this->get(route('two-factor.login'))
+        $this->get(route('verification.otp', ['purpose' => 'login_2fa']))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
-                ->component('auth/two-factor-challenge'),
+                ->component('auth/otp-verify'),
             );
     }
 }

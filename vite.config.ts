@@ -11,6 +11,7 @@ export default defineConfig({
         host: '127.0.0.1',
     },
     plugins: [
+        tailwindcss(),
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             refresh: true,
@@ -26,7 +27,6 @@ export default defineConfig({
                 plugins: ['babel-plugin-react-compiler'],
             },
         }),
-        tailwindcss(),
         wayfinder({
             formVariants: true,
         }),

@@ -24,11 +24,22 @@ class VerifyActiveSubscription
             return $next($request);
         }
 
-        // If email not verified, redirect to OTP verification page
-        if (!$user->email_verified_at) {
+        $channels = \App\Services\OtpService::getChannels();
+        $emailVerifyEnabled = in_array('email', $channels);
+        $phoneVerifyEnabled = (in_array('sms', $channels) || in_array('whatsapp', $channels)) && !empty($user->phone_number);
+
+        // If email verification is enabled and not verified, redirect to OTP verification page
+        if ($emailVerifyEnabled && $user->email_verified_at === null) {
             return $request->expectsJson()
                 ? response()->json(['message' => 'Your email address is not verified.'], 403)
                 : redirect('/verify/otp?purpose=email_verify');
+        }
+
+        // If phone verification is enabled and not verified, redirect to OTP verification page
+        if ($phoneVerifyEnabled && $user->phone_verified_at === null) {
+            return $request->expectsJson()
+                ? response()->json(['message' => 'Your phone number is not verified.'], 403)
+                : redirect('/verify/otp?purpose=phone_verify');
         }
 
         // If no valid subscription, redirect to pricing page

@@ -26,8 +26,7 @@ class SubscriptionTest extends TestCase
     {
         parent::setUp();
 
-        Role::firstOrCreate(['name' => 'User (Free)', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'User (Subscribed)', 'guard_name' => 'web']);
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
 
         $this->user = User::create([
             'name' => 'Subscriber User',
@@ -66,7 +65,7 @@ class SubscriptionTest extends TestCase
             'price' => 19.99,
             'currency' => 'USD',
             'billing_period' => 'month',
-            'trial_days' => 7,
+            'trial_days' => 0,
             'grace_days' => 5,
             'sort_order' => 2,
             'is_active' => true,
@@ -75,13 +74,13 @@ class SubscriptionTest extends TestCase
     }
 
     /** @test */
-    public function subscribing_to_free_plan_handles_local_activation_and_usages()
+    public function test_subscribing_to_free_plan_handles_local_activation_and_usages()
     {
         $this->actingAs($this->user);
 
         $response = $this->post('/billing/checkout', [
             'plan_id' => $this->freePlan->id,
-            'billing_cycle' => 'month',
+            'billing_cycle' => 'monthly',
         ]);
 
         $response->assertRedirect('/dashboard');
@@ -108,16 +107,22 @@ class SubscriptionTest extends TestCase
     }
 
     /** @test */
-    public function cancel_subscription_marks_canceled_but_retains_access_until_ends_at()
+    public function test_cancel_subscription_marks_canceled_but_retains_access_until_ends_at()
     {
         $sub = Subscription::create([
             'user_id' => $this->user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
             'plan_id' => $this->paidPlan->id,
             'name' => 'main',
             'status' => 'active',
             'ends_at' => now()->addDays(20),
             'auto_renew' => true,
         ]);
+
+        $this->user->assignRole('User (Subscribed)');
+        $this->user->removeRole('User (Free)');
+        $this->user->refresh();
 
         $this->actingAs($this->user);
 
@@ -133,10 +138,12 @@ class SubscriptionTest extends TestCase
     }
 
     /** @test */
-    public function resume_subscription_restores_active_status_and_renewal()
+    public function test_resume_subscription_restores_active_status_and_renewal()
     {
         $sub = Subscription::create([
             'user_id' => $this->user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
             'plan_id' => $this->paidPlan->id,
             'name' => 'main',
             'status' => 'canceled',
@@ -144,6 +151,10 @@ class SubscriptionTest extends TestCase
             'auto_renew' => false,
             'canceled_at' => now(),
         ]);
+
+        $this->user->assignRole('User (Subscribed)');
+        $this->user->removeRole('User (Free)');
+        $this->user->refresh();
 
         $this->actingAs($this->user);
 
@@ -158,7 +169,7 @@ class SubscriptionTest extends TestCase
     }
 
     /** @test */
-    public function stripe_webhook_checkout_session_completed_handles_activation()
+    public function test_stripe_webhook_checkout_session_completed_handles_activation()
     {
         // Assert idempotency
         $eventId = 'evt_test_checkout_completed';
@@ -203,16 +214,22 @@ class SubscriptionTest extends TestCase
     }
 
     /** @test */
-    public function stripe_webhook_invoice_payment_failed_enters_grace_period()
+    public function test_stripe_webhook_invoice_payment_failed_enters_grace_period()
     {
         $sub = Subscription::create([
             'user_id' => $this->user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
             'plan_id' => $this->paidPlan->id,
             'name' => 'main',
             'status' => 'active',
             'stripe_id' => 'sub_stripe_123',
             'auto_renew' => true,
         ]);
+
+        $this->user->assignRole('User (Subscribed)');
+        $this->user->removeRole('User (Free)');
+        $this->user->refresh();
 
         $eventId = 'evt_test_payment_failed';
         $payload = [

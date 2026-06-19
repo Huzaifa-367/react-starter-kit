@@ -62,6 +62,7 @@ class SettingController extends Controller
         ]);
 
         $smtpChanged = false;
+        $greenApiChanged = false;
 
         foreach ($request->settings as $key => $value) {
             $setting = Setting::where('key', $key)->first();
@@ -77,10 +78,25 @@ class SettingController extends Controller
                 $smtpChanged = true;
             }
 
+            if (str_starts_with($key, 'green_api_') && Setting::get($key) !== $value) {
+                if (in_array($key, ['green_api_id_instance', 'green_api_token_instance', 'green_api_url', 'green_api_media_url'])) {
+                    $greenApiChanged = true;
+                }
+            }
+
             Setting::set($key, $value);
         }
 
         Setting::flush();
+
+        if ($greenApiChanged) {
+            try {
+                $greenApi = new \App\Services\GreenApiService();
+                $greenApi->syncSessionSettings();
+            } catch (\Exception $e) {
+                Log::warning("Failed to auto-sync Green API session settings: " . $e->getMessage());
+            }
+        }
 
         try {
             Artisan::call('config:clear');
@@ -97,6 +113,21 @@ class SettingController extends Controller
         }
 
         return back()->with('status', 'Settings updated successfully.');
+    }
+
+    /**
+     * Sync WhatsApp session settings from Green API.
+     */
+    public function syncWhatsapp(): RedirectResponse
+    {
+        $greenApi = new \App\Services\GreenApiService();
+        $synced = $greenApi->syncSessionSettings();
+
+        if ($synced) {
+            return back()->with('status', 'WhatsApp session settings synced successfully.');
+        }
+
+        return back()->withErrors(['green_api_id_instance' => 'Failed to sync WhatsApp session. Please verify Green API instance ID, token, and connection.']);
     }
 
     /**

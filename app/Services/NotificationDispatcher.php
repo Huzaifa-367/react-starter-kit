@@ -70,6 +70,14 @@ class NotificationDispatcher
         // Extract placeholders
         $sub = $user->getActiveSubscription();
         $otpCode = $options['code'] ?? $options['otp_code'] ?? OtpService::getPlainOtp($user->id) ?? '000000';
+        
+        // Ensure OTP code is serialized with options for queued mailables
+        if (!isset($options['code'])) {
+            $options['code'] = $otpCode;
+        }
+        if (!isset($options['otp_code'])) {
+            $options['otp_code'] = $otpCode;
+        }
         $planName = $options['plan_name'] ?? $sub?->plan?->name ?? 'Free Plan';
         $endsIn = $options['ends_in'] ?? ($sub?->trial_ends_at ? $sub->trial_ends_at->diffForHumans() : '7 days');
         $renewsOn = $options['renews_on'] ?? ($sub?->ends_at ? $sub->ends_at->toDateString() : 'N/A');

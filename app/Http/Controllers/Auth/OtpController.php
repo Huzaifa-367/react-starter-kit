@@ -97,6 +97,15 @@ class OtpController extends Controller
                     $user->onboarding->update(['step_email_verified' => true]);
                 }
 
+                $channels = OtpService::getChannels();
+                $phoneVerifyEnabled = (in_array('sms', $channels) || in_array('whatsapp', $channels)) && !empty($user->phone_number);
+                if ($phoneVerifyEnabled && $user->phone_verified_at === null) {
+                    OtpService::clear($user);
+                    OtpService::generate($user, 'phone_verify');
+                    NotificationDispatcher::dispatch($user, 'otp_phone_verify');
+                    return redirect()->route('verification.otp', ['purpose' => 'phone_verify']);
+                }
+
                 if ($user->requiresSubscription()) {
                     return redirect()->route('pricing');
                 }
@@ -111,6 +120,10 @@ class OtpController extends Controller
 
                 if ($user->onboarding) {
                     $user->onboarding->update(['step_profile_completed' => true]);
+                }
+
+                if ($user->requiresSubscription()) {
+                    return redirect()->route('pricing');
                 }
 
                 return redirect()->back()->with('status', 'Phone number verified.');

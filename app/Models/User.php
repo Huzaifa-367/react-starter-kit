@@ -55,7 +55,8 @@ use App\Traits\HasSubscriptions;
     'name', 'email', 'password', 'phone_number', 'stripe_id', 'pm_type', 'pm_last_four',
     'is_suspended', 'suspended_at', 'suspended_reason', 'otp_code', 'otp_expires_at',
     'otp_purpose', 'last_login_at', 'last_login_ip', 'avatar_path', 'referral_code',
-    'locale', 'terms_accepted_at', 'terms_version_accepted', 'email_bounced_at', 'email_bounce_type'
+    'locale', 'terms_accepted_at', 'terms_version_accepted', 'email_bounced_at', 'email_bounce_type',
+    'email_verified_at', 'phone_verified_at'
 ])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'otp_code'])]
 class User extends Authenticatable implements PasskeyUser

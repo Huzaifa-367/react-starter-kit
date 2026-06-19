@@ -305,6 +305,7 @@ class SubscriptionManager
         $sub->update([
             'status' => 'grace',
             'grace_ends_at' => Carbon::now()->addDays($sub->plan->grace_days ?? 7),
+            'payment_failed_at' => Carbon::now(),
             'metadata' => $metadata,
         ]);
 

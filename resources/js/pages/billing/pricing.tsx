@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Plan, Subscription } from '@/types/models';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,6 +29,7 @@ interface Props {
 }
 
 export default function Pricing({ plans, activeSubscription }: Props) {
+    const { auth } = usePage<any>().props;
     const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
     const [prorationOpen, setProrationOpen] = useState(false);
     const [prorationLoading, setProrationLoading] = useState(false);
@@ -70,7 +71,7 @@ export default function Pricing({ plans, activeSubscription }: Props) {
         }
 
         // If guest, redirect to registration or login
-        if (!activeSubscription && !router.page.props.auth?.user) {
+        if (!activeSubscription && !auth?.user) {
             toast.error('Please log in or register to choose a plan.');
             router.visit('/login');
             return;

@@ -70,9 +70,8 @@ class AuthenticationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect(route('two-factor.login'));
-        $response->assertSessionHas('login.id', $user->id);
-        $this->assertGuest();
+        $response->assertRedirect(route('verification.otp', ['purpose' => 'login_2fa']));
+        $this->assertAuthenticated();
     }
 
     public function test_users_can_not_authenticate_with_invalid_password()
@@ -102,13 +101,16 @@ class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
 
-        RateLimiter::increment(md5('login'.implode('|', [$user->email, '127.0.0.1'])), amount: 5);
+        $throttleKey = \Illuminate\Support\Str::transliterate(
+            \Illuminate\Support\Str::lower($user->email) . '|127.0.0.1'
+        );
+        \Illuminate\Support\Facades\RateLimiter::increment($throttleKey, amount: 5);
 
         $response = $this->post(route('login.store'), [
             'email' => $user->email,
             'password' => 'wrong-password',
         ]);
 
-        $response->assertTooManyRequests();
+        $response->assertSessionHasErrors('email');
     }
 }

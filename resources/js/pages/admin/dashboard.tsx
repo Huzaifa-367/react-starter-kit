@@ -99,8 +99,8 @@ export default function AdminDashboard({ stats, recent_users, recent_activities 
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-extrabold">{finalStats.total_users}</div>
-                            <p className="text-[10px] text-emerald-500 font-semibold mt-1">
-                                +12% from last month
+                            <p className="text-[10px] text-muted-foreground font-semibold mt-1">
+                                Total registered accounts
                             </p>
                         </CardContent>
                     </Card>
@@ -115,8 +115,8 @@ export default function AdminDashboard({ stats, recent_users, recent_activities 
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-extrabold">{finalStats.active_subscriptions}</div>
-                            <p className="text-[10px] text-emerald-500 font-semibold mt-1">
-                                85% conversion rate
+                            <p className="text-[10px] text-muted-foreground font-semibold mt-1">
+                                {finalStats.total_users > 0 ? Math.round((finalStats.active_subscriptions / finalStats.total_users) * 100) : 0}% customer conversion rate
                             </p>
                         </CardContent>
                     </Card>
@@ -131,8 +131,8 @@ export default function AdminDashboard({ stats, recent_users, recent_activities 
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-extrabold">{formatCurrency(finalStats.mrr)}</div>
-                            <p className="text-[10px] text-emerald-500 font-semibold mt-1">
-                                +8.2% ARR projection
+                            <p className="text-[10px] text-muted-foreground font-semibold mt-1">
+                                {formatCurrency(finalStats.mrr * 12)} ARR projection
                             </p>
                         </CardContent>
                     </Card>
@@ -147,8 +147,8 @@ export default function AdminDashboard({ stats, recent_users, recent_activities 
                         </CardHeader>
                         <CardContent>
                             <div className="text-3xl font-extrabold">{finalStats.churn_rate}%</div>
-                            <p className="text-[10px] text-emerald-500 font-semibold mt-1">
-                                -0.3% improvement
+                            <p className="text-[10px] text-muted-foreground font-semibold mt-1">
+                                Based on last 30 days
                             </p>
                         </CardContent>
                     </Card>

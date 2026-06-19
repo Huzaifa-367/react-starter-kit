@@ -130,26 +130,44 @@ export default function OtpVerify({
                 </form>
 
                 <div className="flex flex-col items-center justify-center space-y-4 pt-2 text-center text-sm text-muted-foreground">
-                    {timer > 0 ? (
-                        <p>
-                            Code expires in:{' '}
-                            <span className="font-mono font-medium text-foreground">
-                                {formatTime(timer)}
-                            </span>
-                        </p>
-                    ) : (
-                        <div className="flex flex-col items-center space-y-1">
-                            <p>Didn't receive the code?</p>
-                            <button
-                                type="button"
-                                onClick={handleResend}
-                                disabled={resending}
-                                className="cursor-pointer font-medium text-primary underline underline-offset-4 hover:text-primary/95 disabled:opacity-50"
-                            >
-                                {resending ? 'Resending...' : 'Resend Code'}
-                            </button>
-                        </div>
-                    )}
+                    <div className="flex flex-col items-center space-y-1">
+                        {timer > 0 && (
+                            <p>
+                                Code expires in:{' '}
+                                <span className="font-mono font-medium text-foreground">
+                                    {formatTime(timer)}
+                                </span>
+                            </p>
+                        )}
+                        <p>Didn't receive the code?</p>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setResending(true);
+                                router.post(
+                                    '/verify/otp/resend',
+                                    { purpose, email },
+                                    {
+                                        onSuccess: () => {
+                                            toast.success('Verification code resent.');
+                                            setTimer(expires_in_seconds);
+                                            reset('code');
+                                            setResending(false);
+                                        },
+                                        onError: (errors) => {
+                                            const message = errors.email || errors.code || 'Failed to resend code.';
+                                            toast.error(message);
+                                            setResending(false);
+                                        },
+                                    }
+                                );
+                            }}
+                            disabled={resending}
+                            className="cursor-pointer font-medium text-primary underline underline-offset-4 hover:text-primary/95 disabled:opacity-50"
+                        >
+                            {resending ? 'Resending...' : 'Resend Code'}
+                        </button>
+                    </div>
 
                     <div className="pt-2">
                         <TextLink href={login()}>Back to Log In</TextLink>

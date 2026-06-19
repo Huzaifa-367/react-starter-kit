@@ -13,7 +13,7 @@ class SettingSeeder extends Seeder
             // SMTP Settings
             [
                 'key' => 'mail_host',
-                'value' => 'sandbox.smtp.mailtrap.io',
+                'value' => env('MAIL_HOST'),
                 'group' => 'smtp',
                 'type' => 'string',
                 'label' => 'Mail Host',
@@ -22,7 +22,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'mail_port',
-                'value' => '2525',
+                'value' => env('MAIL_PORT'),
                 'group' => 'smtp',
                 'type' => 'integer',
                 'label' => 'Mail Port',
@@ -31,7 +31,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'mail_username',
-                'value' => '',
+                'value' => env('MAIL_USERNAME'),
                 'group' => 'smtp',
                 'type' => 'string',
                 'label' => 'Mail Username',
@@ -40,7 +40,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'mail_password',
-                'value' => '',
+                'value' => env('MAIL_PASSWORD'),
                 'group' => 'smtp',
                 'type' => 'secret',
                 'label' => 'Mail Password',
@@ -49,7 +49,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'mail_encryption',
-                'value' => 'tls',
+                'value' => env('MAIL_ENCRYPTION'),
                 'group' => 'smtp',
                 'type' => 'string',
                 'label' => 'Mail Encryption',
@@ -58,7 +58,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'mail_from_address',
-                'value' => 'no-reply@example.com',
+                'value' => env('MAIL_FROM_ADDRESS'),
                 'group' => 'smtp',
                 'type' => 'string',
                 'label' => 'Mail From Address',
@@ -67,7 +67,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'mail_from_name',
-                'value' => 'SaaS App',
+                'value' => env('MAIL_FROM_NAME'),
                 'group' => 'smtp',
                 'type' => 'string',
                 'label' => 'Mail From Name',
@@ -82,6 +82,15 @@ class SettingSeeder extends Seeder
                 'group' => 'green_api',
                 'type' => 'string',
                 'label' => 'Green API URL',
+                'is_encrypted' => false,
+                'is_public' => false,
+            ],
+            [
+                'key' => 'green_api_media_url',
+                'value' => 'https://media.green-api.com',
+                'group' => 'green_api',
+                'type' => 'string',
+                'label' => 'Green API Media URL',
                 'is_encrypted' => false,
                 'is_public' => false,
             ],
@@ -103,11 +112,29 @@ class SettingSeeder extends Seeder
                 'is_encrypted' => true,
                 'is_public' => false,
             ],
+            [
+                'key' => 'green_api_phone',
+                'value' => '',
+                'group' => 'green_api',
+                'type' => 'string',
+                'label' => 'Green API Phone',
+                'is_encrypted' => false,
+                'is_public' => false,
+            ],
+            [
+                'key' => 'green_api_avatar',
+                'value' => '',
+                'group' => 'green_api',
+                'type' => 'string',
+                'label' => 'Green API Avatar',
+                'is_encrypted' => false,
+                'is_public' => false,
+            ],
 
             // Stripe Settings
             [
                 'key' => 'stripe_key',
-                'value' => '',
+                'value' => env('STRIPE_KEY'),
                 'group' => 'stripe',
                 'type' => 'string',
                 'label' => 'Stripe Publishable Key',
@@ -116,7 +143,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'stripe_secret',
-                'value' => '',
+                'value' => env('STRIPE_SECRET'),
                 'group' => 'stripe',
                 'type' => 'secret',
                 'label' => 'Stripe Secret Key',
@@ -125,7 +152,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'stripe_webhook_secret',
-                'value' => '',
+                'value' => env('STRIPE_WEBHOOK_SECRET'),
                 'group' => 'stripe',
                 'type' => 'secret',
                 'label' => 'Stripe Webhook Secret',
@@ -136,7 +163,7 @@ class SettingSeeder extends Seeder
             // Firebase Settings
             [
                 'key' => 'firebase_project_id',
-                'value' => '',
+                'value' => env('FIREBASE_PROJECT_ID'),
                 'group' => 'firebase',
                 'type' => 'string',
                 'label' => 'Firebase Project ID',
@@ -145,7 +172,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'firebase_private_key_id',
-                'value' => '',
+                'value' => env('FIREBASE_PRIVATE_KEY_ID'),
                 'group' => 'firebase',
                 'type' => 'string',
                 'label' => 'Firebase Private Key ID',
@@ -154,7 +181,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'firebase_private_key',
-                'value' => '',
+                'value' => env('FIREBASE_PRIVATE_KEY'),
                 'group' => 'firebase',
                 'type' => 'secret',
                 'label' => 'Firebase Private Key',
@@ -163,7 +190,7 @@ class SettingSeeder extends Seeder
             ],
             [
                 'key' => 'firebase_client_email',
-                'value' => '',
+                'value' => env('FIREBASE_CLIENT_EMAIL'),
                 'group' => 'firebase',
                 'type' => 'string',
                 'label' => 'Firebase Client Email',

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e10b581690ef21749df20fce2ab01a86",
+    "content-hash": "c05a5ab9f086b95bded741e304d5cf1b",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -1323,6 +1323,56 @@
                 }
             ],
             "time": "2025-12-27T19:43:20+00:00"
+        },
+        {
+            "name": "green-api/whatsapp-api-client-php",
+            "version": "v0.3.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/green-api/whatsapp-api-client-php.git",
+                "reference": "15d02cf331e21f959690eabfef67d3381f7eec14"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/green-api/whatsapp-api-client-php/zipball/15d02cf331e21f959690eabfef67d3381f7eec14",
+                "reference": "15d02cf331e21f959690eabfef67d3381f7eec14",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-fileinfo": "*",
+                "ext-json": "*",
+                "php": ">=7.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "GreenApi\\RestApi\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Green-api.com",
+                    "email": "support@green-api.com"
+                }
+            ],
+            "description": "Green-api.com REST API Client",
+            "keywords": [
+                "api",
+                "green-api.com",
+                "private api",
+                "rest",
+                "whatsapp"
+            ],
+            "support": {
+                "issues": "https://github.com/green-api/whatsapp-api-client-php/issues",
+                "source": "https://github.com/green-api/whatsapp-api-client-php/tree/v0.3.7"
+            },
+            "time": "2026-06-01T03:55:35+00:00"
         },
         {
             "name": "guzzlehttp/guzzle",

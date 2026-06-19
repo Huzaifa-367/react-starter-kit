@@ -19,12 +19,14 @@ class UserRegistrationTest extends TestCase
     {
         parent::setUp();
         
+        $this->seed(\Database\Seeders\SettingSeeder::class);
+        
         // Seed roles
         Role::firstOrCreate(['name' => 'User (Free)', 'guard_name' => 'web']);
     }
 
     /** @test */
-    public function new_user_can_register_with_valid_data()
+    public function test_new_user_can_register_with_valid_data()
     {
         $response = $this->post('/register', [
             'name' => 'John Doe',
@@ -62,7 +64,7 @@ class UserRegistrationTest extends TestCase
     }
 
     /** @test */
-    public function registration_requires_terms_acceptance()
+    public function test_registration_requires_terms_acceptance()
     {
         $response = $this->post('/register', [
             'name' => 'John Doe',
@@ -78,7 +80,7 @@ class UserRegistrationTest extends TestCase
     }
 
     /** @test */
-    public function duplicate_unverified_email_resends_otp_without_creating_new_user()
+    public function test_duplicate_unverified_email_resends_otp_without_creating_new_user()
     {
         // Create an unverified user
         $user = User::create([
@@ -110,7 +112,7 @@ class UserRegistrationTest extends TestCase
     }
 
     /** @test */
-    public function correct_otp_verifies_email()
+    public function test_correct_otp_verifies_email()
     {
         $user = User::create([
             'name' => 'John Doe',
@@ -141,7 +143,7 @@ class UserRegistrationTest extends TestCase
     }
 
     /** @test */
-    public function wrong_otp_fails_and_increments_attempts()
+    public function test_wrong_otp_fails_and_increments_attempts()
     {
         $user = User::create([
             'name' => 'John Doe',
@@ -170,7 +172,7 @@ class UserRegistrationTest extends TestCase
     }
 
     /** @test */
-    public function five_failed_otp_attempts_lockout_user()
+    public function test_five_failed_otp_attempts_lockout_user()
     {
         $user = User::create([
             'name' => 'John Doe',
@@ -200,12 +202,12 @@ class UserRegistrationTest extends TestCase
             'purpose' => 'email_verify',
         ]);
 
-        $response2->assertStatus(422);
+        $response2->assertRedirect();
         $response2->assertSessionHasErrors(['code']);
     }
 
     /** @test */
-    public function expired_otp_cannot_be_verified()
+    public function test_expired_otp_cannot_be_verified()
     {
         $user = User::create([
             'name' => 'John Doe',
@@ -227,5 +229,126 @@ class UserRegistrationTest extends TestCase
         
         $user->refresh();
         $this->assertNull($user->email_verified_at);
+    }
+
+    /** @test */
+    public function test_registration_redirects_directly_to_pricing_when_no_channels_are_enabled()
+    {
+        \App\Models\Setting::set('otp_default_channels', []);
+
+        $response = $this->post('/register', [
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => 'P@ssword123!',
+            'password_confirmation' => 'P@ssword123!',
+            'phone_number' => '+14155552671',
+            'terms' => true,
+        ]);
+
+        $response->assertRedirect('/pricing');
+
+        $user = User::where('email', 'john@example.com')->first();
+        $this->assertNull($user->email_verified_at);
+        $this->assertNull($user->phone_verified_at);
+    }
+
+    /** @test */
+    public function test_registration_redirects_to_phone_verify_when_only_phone_verification_is_enabled()
+    {
+        \App\Models\Setting::set('otp_default_channels', ['sms']);
+
+        $response = $this->post('/register', [
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => 'P@ssword123!',
+            'password_confirmation' => 'P@ssword123!',
+            'phone_number' => '+14155552671',
+            'terms' => true,
+        ]);
+
+        $response->assertRedirect('/verify/otp?purpose=phone_verify');
+
+        $user = User::where('email', 'john@example.com')->first();
+        $this->assertNull($user->email_verified_at);
+        $this->assertNull($user->phone_verified_at);
+        $this->assertEquals('phone_verify', $user->otp_purpose);
+    }
+
+    /** @test */
+    public function test_email_verification_success_redirects_to_phone_verification_if_phone_is_enabled()
+    {
+        \App\Models\Setting::set('otp_default_channels', ['email', 'sms']);
+
+        $user = User::create([
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => Hash::make('P@ssword123!'),
+            'phone_number' => '+14155552671',
+            'otp_code' => Hash::make('123456'),
+            'otp_expires_at' => now()->addMinutes(10),
+            'otp_purpose' => 'email_verify',
+            'email_verified_at' => null,
+        ]);
+
+        OnboardingProgress::create(['user_id' => $user->id]);
+
+        $this->actingAs($user);
+
+        $response = $this->post('/verify/otp', [
+            'code' => '123456',
+            'purpose' => 'email_verify',
+        ]);
+
+        $response->assertRedirect('/verify/otp?purpose=phone_verify');
+
+        $user->refresh();
+        $this->assertNotNull($user->email_verified_at);
+        $this->assertNull($user->phone_verified_at);
+        $this->assertEquals('phone_verify', $user->otp_purpose);
+    }
+
+    /** @test */
+    public function test_login_redirects_unverified_user_based_on_channels()
+    {
+        $user = User::create([
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => Hash::make('password'),
+            'phone_number' => '+14155552671',
+            'email_verified_at' => null,
+            'phone_verified_at' => null,
+        ]);
+
+        // Scenario 1: Email verification enabled
+        \App\Models\Setting::set('otp_default_channels', ['email']);
+        $response = $this->post('/login', [
+            'email' => 'john@example.com',
+            'password' => 'password',
+        ]);
+        $response->assertRedirect('/verify/otp?purpose=email_verify');
+
+        // Logout
+        \Illuminate\Support\Facades\Auth::logout();
+        session()->flush();
+
+        // Scenario 2: Email verification disabled, Phone verification enabled
+        \App\Models\Setting::set('otp_default_channels', ['sms']);
+        $response2 = $this->post('/login', [
+            'email' => 'john@example.com',
+            'password' => 'password',
+        ]);
+        $response2->assertRedirect('/verify/otp?purpose=phone_verify');
+
+        // Logout
+        \Illuminate\Support\Facades\Auth::logout();
+        session()->flush();
+
+        // Scenario 3: Both disabled
+        \App\Models\Setting::set('otp_default_channels', []);
+        $response3 = $this->post('/login', [
+            'email' => 'john@example.com',
+            'password' => 'password',
+        ]);
+        $response3->assertRedirect('/pricing');
     }
 }

@@ -128,6 +128,24 @@ class LoginController extends Controller
             return redirect()->route('verification.otp', ['purpose' => 'login_2fa']);
         }
 
+        $channels = OtpService::getChannels();
+        $emailVerifyEnabled = in_array('email', $channels);
+        $phoneVerifyEnabled = (in_array('sms', $channels) || in_array('whatsapp', $channels)) && !empty($user->phone_number);
+
+        if ($emailVerifyEnabled && $user->email_verified_at === null) {
+            OtpService::clear($user);
+            OtpService::generate($user, 'email_verify');
+            NotificationDispatcher::dispatch($user, 'otp_email_verify');
+            return redirect()->route('verification.otp', ['purpose' => 'email_verify']);
+        }
+
+        if ($phoneVerifyEnabled && $user->phone_verified_at === null) {
+            OtpService::clear($user);
+            OtpService::generate($user, 'phone_verify');
+            NotificationDispatcher::dispatch($user, 'otp_phone_verify');
+            return redirect()->route('verification.otp', ['purpose' => 'phone_verify']);
+        }
+
         if ($user->requiresSubscription()) {
             return redirect()->route('pricing');
         }

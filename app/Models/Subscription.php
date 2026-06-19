@@ -33,6 +33,9 @@ class Subscription extends Model
         'previous_plan_id',
         'coupon_id',
         'metadata',
+        'payment_failed_at',
+        'retry_count',
+        'next_retry_at',
     ];
 
     protected $casts = [
@@ -46,6 +49,9 @@ class Subscription extends Model
         'canceled_at' => 'datetime',
         'previous_plan_id' => 'integer',
         'metadata' => 'json',
+        'payment_failed_at' => 'datetime',
+        'next_retry_at' => 'datetime',
+        'retry_count' => 'integer',
     ];
 
     public function user(): BelongsTo

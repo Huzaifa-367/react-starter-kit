@@ -73,7 +73,12 @@ class RegisteredUserController extends Controller
         ]);
 
         // Assign role 'User (Free)'
-        $user->assignRole('User (Free)');
+        if (\Spatie\Permission\Models\Role::where('name', 'User (Free)')->exists()) {
+            $user->assignRole('User (Free)');
+        } else if (!app()->environment('production')) {
+            \Spatie\Permission\Models\Role::create(['name' => 'User (Free)', 'guard_name' => 'web']);
+            $user->assignRole('User (Free)');
+        }
 
         // Create onboarding progress
         OnboardingProgress::create([
@@ -110,18 +115,28 @@ class RegisteredUserController extends Controller
             }
         }
 
-        // Generate OTP
-        $otp = OtpService::generate($user, 'email_verify');
-
-        // Dispatch notifications
-        NotificationDispatcher::dispatch($user, 'otp_email_verify');
-
         // Login the user
         Auth::login($user);
 
         // Log audit trail
         AuditLogger::log('user.created', $user);
 
-        return redirect()->route('verification.otp', ['purpose' => 'email_verify']);
+        $channels = OtpService::getChannels();
+        $emailVerifyEnabled = in_array('email', $channels);
+        $phoneVerifyEnabled = (in_array('sms', $channels) || in_array('whatsapp', $channels)) && !empty($user->phone_number);
+
+        if ($emailVerifyEnabled) {
+            OtpService::generate($user, 'email_verify');
+            NotificationDispatcher::dispatch($user, 'otp_email_verify');
+            return redirect()->route('verification.otp', ['purpose' => 'email_verify']);
+        }
+
+        if ($phoneVerifyEnabled) {
+            OtpService::generate($user, 'phone_verify');
+            NotificationDispatcher::dispatch($user, 'otp_phone_verify');
+            return redirect()->route('verification.otp', ['purpose' => 'phone_verify']);
+        }
+
+        return redirect()->route('pricing');
     }
 }

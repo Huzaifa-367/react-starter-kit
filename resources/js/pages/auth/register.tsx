@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, usePage } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { Checkbox } from '@/components/ui/checkbox';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
 
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export default function Register({ passwordRules }: Props) {
+    const { tos } = usePage<any>().props;
+
     return (
         <>
             <Head title="Register" />
@@ -90,10 +93,43 @@ export default function Register({ passwordRules }: Props) {
                                 />
                             </div>
 
+                            <div className="flex items-start space-x-3">
+                                <Checkbox
+                                    id="terms"
+                                    name="terms"
+                                    required
+                                    tabIndex={5}
+                                    data-test="terms-checkbox"
+                                />
+                                <Label htmlFor="terms" className="text-sm font-medium leading-normal peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer">
+                                    I agree to the{' '}
+                                    <a
+                                        href={tos?.tos_url || '#'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-indigo-600 hover:text-indigo-850 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        Terms of Service
+                                    </a>{' '}
+                                    and{' '}
+                                    <a
+                                        href={tos?.privacy_url || '#'}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-indigo-600 hover:text-indigo-850 dark:text-indigo-400 dark:hover:text-indigo-300 underline"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        Privacy Policy
+                                    </a>
+                                </Label>
+                            </div>
+                            <InputError message={errors.terms} className="-mt-2" />
+
                             <Button
                                 type="submit"
                                 className="mt-2 w-full"
-                                tabIndex={5}
+                                tabIndex={6}
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
@@ -103,7 +139,7 @@ export default function Register({ passwordRules }: Props) {
 
                         <div className="text-center text-sm text-muted-foreground">
                             Already have an account?{' '}
-                            <TextLink href={login()} tabIndex={6}>
+                            <TextLink href={login()} tabIndex={7}>
                                 Log in
                             </TextLink>
                         </div>

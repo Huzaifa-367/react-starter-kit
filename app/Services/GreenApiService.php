@@ -5,10 +5,53 @@ namespace App\Services;
 use App\Models\User;
 use App\Models\Setting;
 use App\Models\NotificationLog;
-use Illuminate\Support\Facades\Http;
+use GreenApi\RestApi\GreenApiClient;
 
 class GreenApiService
 {
+    /**
+     * Get initialized GreenApiClient.
+     */
+    protected function getClient(): ?GreenApiClient
+    {
+        $idInstance = Setting::get('green_api_id_instance') ?: config('services.green_api.id_instance');
+        $tokenInstance = Setting::get('green_api_token_instance') ?: config('services.green_api.token_instance');
+
+        if (empty($idInstance) || empty($tokenInstance)) {
+            return null;
+        }
+
+        return app()->make(GreenApiClient::class);
+    }
+
+    /**
+     * Synchronize WhatsApp session settings (phone and avatar) from Green API.
+     */
+    public function syncSessionSettings(): bool
+    {
+        $client = $this->getClient();
+        if (!$client) {
+            return false;
+        }
+
+        try {
+            $response = $client->account->getWaSettings();
+
+            if ($response && $response->code === 200 && isset($response->data)) {
+                $phone = $response->data->phone ?? '';
+                $avatar = $response->data->avatar ?? '';
+
+                Setting::set('green_api_phone', $phone);
+                Setting::set('green_api_avatar', $avatar);
+
+                return true;
+            }
+            return false;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
     /**
      * Send message using Green API and log to database.
      */
@@ -22,11 +65,8 @@ class GreenApiService
      */
     protected function sendMessageWithType(string $phoneNumber, string $message, string $type): bool
     {
-        $url = Setting::get('green_api_url');
-        $idInstance = Setting::get('green_api_id_instance');
-        $tokenInstance = Setting::get('green_api_token_instance');
-
-        if (empty($url) || empty($idInstance) || empty($tokenInstance)) {
+        $client = $this->getClient();
+        if (!$client) {
             return false;
         }
 
@@ -44,14 +84,10 @@ class GreenApiService
         $userId = $user ? $user->id : null;
 
         try {
-            $endpoint = rtrim($url, '/') . "/waInstance{$idInstance}/sendMessage/{$tokenInstance}";
-            $response = Http::timeout(10)->post($endpoint, [
-                'chatId' => $chatId,
-                'message' => $message,
-            ]);
+            $result = $client->sending->sendMessage($chatId, $message);
 
-            $success = $response->successful();
-            $errorMsg = $success ? null : "HTTP status: " . $response->status() . " - Body: " . $response->body();
+            $success = ($result && $result->code === 200);
+            $errorMsg = $success ? null : "Code: " . ($result->code ?? 'unknown') . " - Error: " . json_encode($result->error ?? 'none');
 
             NotificationLog::create([
                 'user_id' => $userId,

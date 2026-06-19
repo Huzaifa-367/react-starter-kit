@@ -327,26 +327,64 @@ class StripeBillingController extends Controller
 
         $subManager = new SubscriptionManager();
 
-        switch ($event->type) {
-            case 'checkout.session.completed':
-                $session = $event->data->object;
-                $userId = $session->metadata->user_id ?? null;
-                $planId = $session->metadata->plan_id ?? null;
+        // Idempotency check: find or create webhook log
+        $webhookLog = \App\Models\WebhookLog::firstOrCreate([
+            'event_id' => $event->id,
+        ], [
+            'source' => 'stripe',
+            'event_type' => $event->type,
+            'payload' => json_decode($payload, true) ?: [],
+            'processed' => false,
+        ]);
 
-                if ($userId && $planId) {
-                    $user = User::find($userId);
-                    $plan = Plan::find($planId);
-                    if ($user && $plan) {
-                        $subManager->subscribeTo($user, $plan, $session->subscription);
+        if ($webhookLog->processed) {
+            return response()->json(['status' => 'success', 'message' => 'Event already processed']);
+        }
+
+        try {
+            switch ($event->type) {
+                case 'checkout.session.completed':
+                    $session = $event->data->object;
+                    $userId = $session->metadata->user_id ?? null;
+                    $planId = $session->metadata->plan_id ?? null;
+
+                    if ($userId && $planId) {
+                        $user = User::find($userId);
+                        $plan = Plan::find($planId);
+                        if ($user && $plan) {
+                            $subManager->subscribeTo($user, $plan, $session->subscription);
+                        }
                     }
-                }
-                break;
+                    break;
 
-            case 'customer.subscription.updated':
-            case 'customer.subscription.deleted':
-                $stripeSubscription = $event->data->object;
-                $subManager->syncFromStripe($stripeSubscription);
-                break;
+                case 'customer.subscription.updated':
+                case 'customer.subscription.deleted':
+                    $stripeSubscription = $event->data->object;
+                    $subManager->syncFromStripe($stripeSubscription);
+                    break;
+
+                case 'invoice.payment_failed':
+                    $invoice = $event->data->object;
+                    $stripeSubId = $invoice->subscription;
+                    if ($stripeSubId) {
+                        $sub = \App\Models\Subscription::where('stripe_id', $stripeSubId)->first();
+                        if ($sub) {
+                            $subManager->enterGracePeriod($sub);
+                        }
+                    }
+                    break;
+            }
+
+            $webhookLog->update([
+                'processed' => true,
+                'error' => null,
+            ]);
+        } catch (\Exception $e) {
+            $webhookLog->update([
+                'processed' => false,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
         }
 
         return response()->json(['status' => 'success']);

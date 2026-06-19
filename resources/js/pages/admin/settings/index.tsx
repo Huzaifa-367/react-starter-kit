@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import React, { useState, useEffect } from 'react';
+import { Head, useForm, router } from '@inertiajs/react';
 import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { Sliders, Mail, Smartphone, CreditCard, Bell, Sparkles, Loader2, Save } from 'lucide-react';
+import { Sliders, Mail, Smartphone, CreditCard, Bell, Sparkles, Loader2, Save, RotateCw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface SettingItem {
@@ -34,6 +34,24 @@ interface Props {
 export default function SettingsIndex({ settings }: Props) {
     const groups = Object.keys(settings);
     const [activeGroup, setActiveGroup] = useState<string>(groups[0] || 'app');
+    const [syncing, setSyncing] = useState<boolean>(false);
+
+    const handleSyncWhatsapp = () => {
+        setSyncing(true);
+        router.post('/admin/settings/sync-whatsapp', {}, {
+            onSuccess: () => {
+                toast.success('WhatsApp session settings synchronized successfully!');
+                setSyncing(false);
+            },
+            onError: (err) => {
+                toast.error(Object.values(err)[0] as string || 'Failed to sync WhatsApp session.');
+                setSyncing(false);
+            },
+            onFinish: () => {
+                setSyncing(false);
+            }
+        });
+    };
 
     // Flatten settings to construct initial form values
     const initialValues: Record<string, string> = {};
@@ -46,6 +64,16 @@ export default function SettingsIndex({ settings }: Props) {
     const form = useForm({
         settings: initialValues,
     });
+
+    useEffect(() => {
+        const updatedValues: Record<string, string> = {};
+        Object.values(settings).forEach((groupSettings) => {
+            groupSettings.forEach((setting) => {
+                updatedValues[setting.key] = setting.value || '';
+            });
+        });
+        form.setData('settings', updatedValues);
+    }, [settings]);
 
     const handleValueChange = (key: string, value: string) => {
         form.setData('settings', {
@@ -138,36 +166,105 @@ export default function SettingsIndex({ settings }: Props) {
                     {/* Right: Settings Fields Form */}
                     <Card className="border border-border lg:col-span-3">
                         <CardHeader>
-                            <CardTitle className="text-lg font-bold">
-                                {getGroupLabel(activeGroup)}
-                            </CardTitle>
-                            <CardDescription>
-                                Modify credential configs. Secrets are masked with dots.
-                            </CardDescription>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                <div>
+                                    <CardTitle className="text-lg font-bold">
+                                        {getGroupLabel(activeGroup)}
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Modify credential configs. Secrets are masked with dots.
+                                    </CardDescription>
+                                </div>
+                                {activeGroup === 'green_api' && (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={handleSyncWhatsapp}
+                                        disabled={syncing || form.processing}
+                                        className="cursor-pointer font-semibold gap-2 border-emerald-500/20 text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10"
+                                    >
+                                        {syncing ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <RotateCw className="h-4 w-4" />
+                                        )}
+                                        Sync Session Settings
+                                    </Button>
+                                )}
+                            </div>
                         </CardHeader>
 
                         <form onSubmit={handleSubmit}>
                             <CardContent className="space-y-6">
-                                {(settings[activeGroup] || []).map((setting) => (
-                                    <div key={setting.id} className="grid gap-2">
-                                        <div className="flex items-center gap-2">
-                                            <Label htmlFor={`sett-${setting.key}`}>{setting.label}</Label>
-                                            {setting.is_encrypted && (
-                                                <Badge variant="outline" className="text-[9px] font-mono py-0 text-emerald-500 border-emerald-500/10">
-                                                    Encrypted
-                                                </Badge>
-                                            )}
+                                {(settings[activeGroup] || []).map((setting) => {
+                                    if (setting.key === 'green_api_phone') {
+                                        return (
+                                            <div key={setting.id} className="grid gap-2">
+                                                <Label htmlFor={`sett-${setting.key}`}>{setting.label}</Label>
+                                                <div className="flex items-center gap-2 max-w-xl">
+                                                    <Input
+                                                        id={`sett-${setting.key}`}
+                                                        value={form.data.settings[setting.key] || 'Not Synced'}
+                                                        disabled
+                                                        className="font-mono text-sm bg-muted/50 text-muted-foreground"
+                                                    />
+                                                    <Badge variant="secondary" className="whitespace-nowrap">
+                                                        Sync Only
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    if (setting.key === 'green_api_avatar') {
+                                        const avatarUrl = form.data.settings[setting.key];
+                                        return (
+                                            <div key={setting.id} className="grid gap-2">
+                                                <Label htmlFor={`sett-${setting.key}`}>{setting.label}</Label>
+                                                <div className="flex items-center gap-4 max-w-xl">
+                                                    {avatarUrl ? (
+                                                        <img
+                                                            src={avatarUrl}
+                                                            alt="WhatsApp Session Avatar"
+                                                            className="w-12 h-12 rounded-full border border-border object-cover"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-12 h-12 rounded-full border border-dashed border-muted-foreground/30 flex items-center justify-center bg-muted/30 text-muted-foreground text-[10px] font-medium text-center p-1">
+                                                            No Image
+                                                        </div>
+                                                    )}
+                                                    <Input
+                                                        id={`sett-${setting.key}`}
+                                                        value={avatarUrl || 'Not Synced'}
+                                                        disabled
+                                                        className="font-mono text-sm bg-muted/50 flex-1 text-muted-foreground"
+                                                    />
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+
+                                    return (
+                                        <div key={setting.id} className="grid gap-2">
+                                            <div className="flex items-center gap-2">
+                                                <Label htmlFor={`sett-${setting.key}`}>{setting.label}</Label>
+                                                {setting.is_encrypted && (
+                                                    <Badge variant="outline" className="text-[9px] font-mono py-0 text-emerald-500 border-emerald-500/10">
+                                                        Encrypted
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <Input
+                                                id={`sett-${setting.key}`}
+                                                type={setting.type === 'secret' ? 'password' : 'text'}
+                                                value={form.data.settings[setting.key]}
+                                                onChange={(e) => handleValueChange(setting.key, e.target.value)}
+                                                disabled={form.processing}
+                                                className="max-w-xl font-mono text-sm"
+                                            />
                                         </div>
-                                        <Input
-                                            id={`sett-${setting.key}`}
-                                            type={setting.type === 'secret' ? 'password' : 'text'}
-                                            value={form.data.settings[setting.key]}
-                                            onChange={(e) => handleValueChange(setting.key, e.target.value)}
-                                            disabled={form.processing}
-                                            className="max-w-xl font-mono text-sm"
-                                        />
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </CardContent>
                             <CardFooter className="border-t border-border pt-4 pb-4 flex justify-between bg-muted/20">
                                 <span className="text-xs text-muted-foreground">

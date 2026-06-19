@@ -5,6 +5,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 use App\Http\Controllers\Admin\ActivityLogController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\AdminMailController;
 use App\Http\Controllers\Admin\AdminPlanController;
 use App\Http\Controllers\Admin\AdminRoleController;
@@ -32,7 +33,10 @@ use App\Http\Controllers\Admin\WhatsappNotificationController;
 use App\Http\Controllers\Auth\MagicLinkController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\Auth\SocialAuthController;
-use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\PasswordResetController;
+use App\Http\Controllers\Settings\SessionController;
 
 use App\Http\Controllers\Billing\InvoiceController;
 use App\Http\Controllers\Billing\PlanController;
@@ -40,12 +44,25 @@ use App\Http\Controllers\Billing\StripeBillingController;
 
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Settings\ProfileController;
-use App\Http\Controllers\Webhooks\EmailBounceController;
+use App\Http\Controllers\EmailBounceController;
 
 use App\Models\Setting;
 
 // ─── PUBLIC ──────────────────────────────────────────────────────────────
 Route::inertia('/', 'welcome')->name('home');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/register', [RegisteredUserController::class, 'create'])->name('register');
+    Route::post('/register', [RegisteredUserController::class, 'store'])->name('register.store');
+
+    Route::get('/login', [LoginController::class, 'create'])->name('login');
+    Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'showLinkRequestForm'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'forgotPassword'])->name('password.email');
+    Route::get('/reset-password', [PasswordResetController::class, 'showResetForm'])->name('password.reset.form');
+    Route::post('/reset-password', [PasswordResetController::class, 'resetPassword'])->name('password.update');
+});
 
 Route::middleware('throttle:60,1')->group(function () {
     Route::get('/pricing', [PlanController::class, 'pricing'])->name('pricing');
@@ -66,6 +83,8 @@ Route::get('/auth/magic-link/login', [MagicLinkController::class, 'login'])->nam
 
 // ─── AUTH (no subscription check yet) ───────────────────────────────────
 Route::middleware(['auth'])->group(function () {
+    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
     // OTP Verification
     Route::get('/verify/otp', [OtpController::class, 'show'])->name('verification.otp');
     Route::post('/verify/otp', [OtpController::class, 'verifyOtp'])->name('verification.otp.verify');
@@ -151,7 +170,7 @@ Route::middleware(['auth', 'subscribed', 'verified-tos'])->group(function () {
 
 // ─── ADMIN (subscription not required) ───────────────────────────────────
 Route::middleware(['auth', 'verified-tos', 'role:Admin|Super Admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', fn() => Inertia::render('admin/dashboard'))->name('dashboard');
+    Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
     Route::get('/analytics/export', [AnalyticsController::class, 'exportCsv'])->name('analytics.export');
 
@@ -243,6 +262,7 @@ Route::middleware(['auth', 'verified-tos', 'role:Admin|Super Admin'])->prefix('a
     // Settings
     Route::get('/settings', [SettingController::class, 'index'])->name('settings');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
+    Route::post('/settings/sync-whatsapp', [SettingController::class, 'syncWhatsapp'])->name('settings.sync-whatsapp');
 
     // Maintenance Mode
     Route::post('/maintenance/enable', [MaintenanceController::class, 'enable'])->name('maintenance.enable');
