@@ -53,6 +53,45 @@ export default function SettingsIndex({ settings }: Props) {
         });
     };
 
+    const [testEmail, setTestEmail] = useState<string>('');
+    const [testPhone, setTestPhone] = useState<string>('');
+    const [sendingTestMail, setSendingTestMail] = useState<boolean>(false);
+    const [sendingTestWhatsapp, setSendingTestWhatsapp] = useState<boolean>(false);
+
+    const handleSendTestEmail = () => {
+        setSendingTestMail(true);
+        router.post('/admin/settings/test-email', { email: testEmail }, {
+            onSuccess: () => {
+                toast.success('Test email sent successfully!');
+                setSendingTestMail(false);
+            },
+            onError: (err) => {
+                toast.error(Object.values(err)[0] as string || 'Failed to send test email.');
+                setSendingTestMail(false);
+            },
+            onFinish: () => {
+                setSendingTestMail(false);
+            }
+        });
+    };
+
+    const handleSendTestWhatsapp = () => {
+        setSendingTestWhatsapp(true);
+        router.post('/admin/settings/test-whatsapp', { phone: testPhone }, {
+            onSuccess: () => {
+                toast.success('Test WhatsApp message sent successfully!');
+                setSendingTestWhatsapp(false);
+            },
+            onError: (err) => {
+                toast.error(Object.values(err)[0] as string || 'Failed to send test WhatsApp message.');
+                setSendingTestWhatsapp(false);
+            },
+            onFinish: () => {
+                setSendingTestWhatsapp(false);
+            }
+        });
+    };
+
     // Flatten settings to construct initial form values
     const initialValues: Record<string, string> = {};
     Object.values(settings).forEach((groupSettings) => {
@@ -150,11 +189,10 @@ export default function SettingsIndex({ settings }: Props) {
                                     key={group}
                                     type="button"
                                     onClick={() => setActiveGroup(group)}
-                                    className={`w-full flex items-center gap-2.5 p-3 rounded-xl text-left text-sm font-semibold transition-all cursor-pointer ${
-                                        activeGroup === group
+                                    className={`w-full flex items-center gap-2.5 p-3 rounded-xl text-left text-sm font-semibold transition-all cursor-pointer ${activeGroup === group
                                             ? 'bg-primary text-primary-foreground shadow-xs'
                                             : 'text-muted-foreground hover:bg-muted/10 hover:text-foreground'
-                                    }`}
+                                        }`}
                                 >
                                     {getGroupIcon(group)}
                                     <span>{getGroupLabel(group)}</span>
@@ -265,6 +303,70 @@ export default function SettingsIndex({ settings }: Props) {
                                         </div>
                                     );
                                 })}
+
+                                {activeGroup === 'smtp' && (
+                                    <div className="border-t border-border pt-6 mt-6 space-y-4">
+                                        <h3 className="text-sm font-bold text-foreground">Test Mail Delivery</h3>
+                                        <p className="text-xs text-muted-foreground">
+                                            Send a test email message to verify SMTP settings.
+                                        </p>
+                                        <div className="flex gap-2 max-w-xl">
+                                            <Input
+                                                type="email"
+                                                placeholder="recipient@example.com"
+                                                value={testEmail}
+                                                onChange={(e) => setTestEmail(e.target.value)}
+                                                className="text-sm"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={handleSendTestEmail}
+                                                disabled={sendingTestMail || !testEmail}
+                                                className="cursor-pointer"
+                                            >
+                                                {sendingTestMail ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Mail className="mr-2 h-4 w-4" />
+                                                )}
+                                                Send Test Email
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeGroup === 'green_api' && (
+                                    <div className="border-t border-border pt-6 mt-6 space-y-4">
+                                        <h3 className="text-sm font-bold text-foreground">Test WhatsApp Delivery</h3>
+                                        <p className="text-xs text-muted-foreground">
+                                            Send a test text message to a WhatsApp number to verify Green API settings.
+                                        </p>
+                                        <div className="flex gap-2 max-w-xl">
+                                            <Input
+                                                type="text"
+                                                placeholder="Recipient phone (e.g. 92123456789)"
+                                                value={testPhone}
+                                                onChange={(e) => setTestPhone(e.target.value)}
+                                                className="text-sm font-mono"
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={handleSendTestWhatsapp}
+                                                disabled={sendingTestWhatsapp || !testPhone}
+                                                className="cursor-pointer"
+                                            >
+                                                {sendingTestWhatsapp ? (
+                                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <RotateCw className="mr-2 h-4 w-4" />
+                                                )}
+                                                Send Test Message
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                             </CardContent>
                             <CardFooter className="border-t border-border pt-4 pb-4 flex justify-between bg-muted/20">
                                 <span className="text-xs text-muted-foreground">

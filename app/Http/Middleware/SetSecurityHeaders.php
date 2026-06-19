@@ -17,6 +17,26 @@ class SetSecurityHeaders
         $isLocal = app()->environment(['local', 'development', 'testing']);
         $viteHttp = " http://127.0.0.1:5173 http://localhost:5173";
         $viteWs = " ws://127.0.0.1:5173 ws://localhost:5173";
+
+        if ($isLocal && file_exists(public_path('hot'))) {
+            $hotUrl = trim(file_get_contents(public_path('hot')));
+            if ($hotUrl) {
+                $hotUrl = rtrim($hotUrl, '/');
+                $viteHttp .= " " . $hotUrl;
+                
+                $wsUrl = str_replace(['http://', 'https://'], ['ws://', 'wss://'], $hotUrl);
+                $viteWs .= " " . $wsUrl;
+
+                if (preg_match('/:(\d+)/', $hotUrl, $matches)) {
+                    $port = $matches[1];
+                    if ($port != 5173) {
+                        $viteHttp .= " http://127.0.0.1:{$port} http://localhost:{$port}";
+                        $viteWs .= " ws://127.0.0.1:{$port} ws://localhost:{$port}";
+                    }
+                }
+            }
+        }
+
         $csp = "default-src 'self'; "
             ."script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com".($isLocal ? $viteHttp : '')."; "
             ."style-src 'self' 'unsafe-inline' https://fonts.googleapis.com".($isLocal ? $viteHttp : '')."; "

@@ -263,6 +263,8 @@ Route::middleware(['auth', 'verified-tos', 'role:Admin|Super Admin'])->prefix('a
     Route::get('/settings', [SettingController::class, 'index'])->name('settings');
     Route::post('/settings', [SettingController::class, 'update'])->name('settings.update');
     Route::post('/settings/sync-whatsapp', [SettingController::class, 'syncWhatsapp'])->name('settings.sync-whatsapp');
+    Route::post('/settings/test-email', [SettingController::class, 'sendTestEmail'])->name('settings.test-email');
+    Route::post('/settings/test-whatsapp', [SettingController::class, 'sendTestWhatsapp'])->name('settings.test-whatsapp');
 
     // Maintenance Mode
     Route::post('/maintenance/enable', [MaintenanceController::class, 'enable'])->name('maintenance.enable');

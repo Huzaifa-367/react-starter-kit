@@ -203,7 +203,6 @@ class GreenApiServiceTest extends TestCase
         ]);
         $admin->assignRole('Super Admin');
 
-        // Set credentials first so getClient returns the client
         Setting::set('green_api_id_instance', '123456');
         Setting::set('green_api_token_instance', 'token123');
 
@@ -213,5 +212,69 @@ class GreenApiServiceTest extends TestCase
         $response->assertRedirect();
         $this->assertEquals('79991112233', Setting::get('green_api_phone'));
         $this->assertEquals('https://pps.whatsapp.net/v/new_avatar.jpg', Setting::get('green_api_avatar'));
+    }
+
+    public function test_settings_send_test_email()
+    {
+        \Illuminate\Support\Facades\Mail::shouldReceive('raw')
+            ->once()
+            ->withArgs(function ($text, $callback) {
+                return str_contains(strtolower($text), 'smtp credentials are valid');
+            });
+
+        Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Super Admin');
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/settings/test-email', [
+                'email' => 'test-recipient@example.com',
+            ]);
+
+        $response->assertRedirect();
+    }
+
+    public function test_settings_send_test_whatsapp()
+    {
+        $mockClient = Mockery::mock(GreenApiClient::class);
+        $mockSending = Mockery::mock(Sending::class);
+
+        $mockResponse = new stdClass();
+        $mockResponse->code = 200;
+        $mockResponse->data = (object) ['idMessage' => 'msg123'];
+        $mockResponse->error = null;
+
+        $mockSending->shouldReceive('sendMessage')
+            ->once()
+            ->with('1234567890@c.us', 'This is a test WhatsApp message from SaaS App. Your Green API credentials are valid!')
+            ->andReturn($mockResponse);
+
+        $mockClient->sending = $mockSending;
+
+        $this->app->instance(GreenApiClient::class, $mockClient);
+
+        Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
+        $admin = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => bcrypt('password'),
+            'email_verified_at' => now(),
+        ]);
+        $admin->assignRole('Super Admin');
+
+        Setting::set('green_api_id_instance', '123456');
+        Setting::set('green_api_token_instance', 'token123');
+
+        $response = $this->actingAs($admin)
+            ->post('/admin/settings/test-whatsapp', [
+                'phone' => '1234567890',
+            ]);
+
+        $response->assertRedirect();
     }
 }

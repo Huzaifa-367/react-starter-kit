@@ -131,6 +131,79 @@ class SettingController extends Controller
     }
 
     /**
+     * Send a test email to validate SMTP configurations.
+     */
+    public function sendTestEmail(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\Mail::raw(
+                "This is a test email from SaaS App. Your SMTP credentials are valid!",
+                function ($message) use ($request) {
+                    $message->to($request->email)
+                        ->subject("SMTP Configuration Test Success");
+                }
+            );
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Test email sent successfully.',
+                ]);
+            }
+
+            return back()->with('status', 'Test email sent successfully.');
+        } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'failed',
+                    'message' => 'Failed to send test email: ' . $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->withErrors(['mail_host' => 'Failed to send test email: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Send a test WhatsApp message to validate Green API configurations.
+     */
+    public function sendTestWhatsapp(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+    {
+        $request->validate([
+            'phone' => ['required', 'string'],
+        ]);
+
+        $greenApi = new \App\Services\GreenApiService();
+        $success = $greenApi->sendMessage(
+            $request->phone,
+            "This is a test WhatsApp message from SaaS App. Your Green API credentials are valid!"
+        );
+
+        if ($success) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Test WhatsApp message sent successfully.',
+                ]);
+            }
+            return back()->with('status', 'Test WhatsApp message sent successfully.');
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'failed',
+                'message' => 'Failed to send test WhatsApp message. Please check logs or credentials.',
+            ], 500);
+        }
+
+        return back()->withErrors(['green_api_id_instance' => 'Failed to send test WhatsApp message. Please check configurations.']);
+    }
+
+    /**
      * Test connection to configured SMTP mail server using fsockopen.
      */
     private function testSmtpConnection(): bool

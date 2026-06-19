@@ -35,8 +35,9 @@ self.addEventListener('activate', (event) => {
 
 // Intercept fetch requests
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
+  // Only handle HTTP/HTTPS GET requests
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http://') && !event.request.url.startsWith('https://')) return;
 
   const url = new URL(event.request.url);
 

@@ -37,6 +37,38 @@ interface RoleItem {
     users_count: number;
 }
 
+const getPermissionGroup = (name: string): string => {
+    if (name.startsWith('admin.users.')) return 'User Management';
+    if (name === 'admin.users') return 'User Management';
+    if (name.startsWith('admin.roles.')) return 'Role Management';
+    if (name === 'admin.roles') return 'Role Management';
+    if (name.startsWith('admin.plans.')) return 'Plan Management';
+    if (name === 'admin.plans') return 'Plan Management';
+    if (name.startsWith('admin.coupons.')) return 'Coupon Management';
+    if (name === 'admin.coupons') return 'Coupon Management';
+    if (name.startsWith('admin.segments.')) return 'Segment Management';
+    if (name === 'admin.segments') return 'Segment Management';
+    if (name.startsWith('admin.broadcasts.')) return 'Broadcast Management';
+    if (name === 'admin.broadcasts') return 'Broadcast Management';
+    if (name.startsWith('admin.email-templates.')) return 'Email Templates';
+    if (name === 'admin.email-templates') return 'Email Templates';
+    if (name.startsWith('admin.feature-flags.')) return 'Feature Flags';
+    if (name === 'admin.feature-flags') return 'Feature Flags';
+    if (name.startsWith('admin.ip-rules.')) return 'IP Rules';
+    if (name === 'admin.ip-rules') return 'IP Rules';
+    if (name.startsWith('admin.diagnostics.')) return 'System Diagnostics';
+    if (name.startsWith('admin.failed-jobs.')) return 'System Management';
+    if (name.startsWith('admin.rate-limits.')) return 'System Management';
+    if (name.startsWith('admin.webhook-logs.')) return 'System Management';
+    if (name.startsWith('admin.logs.')) return 'System Management';
+    if (name.startsWith('admin.activity.')) return 'System Management';
+    if (name.startsWith('admin.settings') || name.startsWith('admin.maintenance') || name === 'admin.system-health' || name === 'admin.cache.flush' || name === 'admin.dashboard' || name === 'admin.analytics' || name === 'admin.analytics.export' || name === 'admin.impersonation.stop') return 'System & Analytics';
+    if (name.startsWith('billing.')) return 'Billing Operations';
+    if (name.startsWith('profile.') || name.startsWith('security.') || name === 'appearance.edit' || name === 'dashboard' || name === 'pricing.subscribed' || name === 'user-password.update') return 'User Profile & Common';
+    
+    return 'General / Unclassified';
+};
+
 interface Props {
     roles: RoleItem[];
     permissions: PermissionItem[];
@@ -45,6 +77,32 @@ interface Props {
 export default function RolesIndex({ roles, permissions }: Props) {
     const [selectedRole, setSelectedRole] = useState<RoleItem | null>(roles[0] || null);
     const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
+
+    const groupedPermissions: Record<string, PermissionItem[]> = {};
+    permissions.forEach((perm) => {
+        const group = getPermissionGroup(perm.name);
+        if (!groupedPermissions[group]) {
+            groupedPermissions[group] = [];
+        }
+        groupedPermissions[group].push(perm);
+    });
+
+    const handleSelectAllGroup = (groupPerms: PermissionItem[]) => {
+        setSelectedPermissions((prev) => {
+            const newPerms = [...prev];
+            groupPerms.forEach((p) => {
+                if (!newPerms.includes(p.name)) {
+                    newPerms.push(p.name);
+                }
+            });
+            return newPerms;
+        });
+    };
+
+    const handleDeselectAllGroup = (groupPerms: PermissionItem[]) => {
+        const namesToRemove = groupPerms.map((p) => p.name);
+        setSelectedPermissions((prev) => prev.filter((name) => !namesToRemove.includes(name)));
+    };
 
     // Modal states
     const [createOpen, setCreateOpen] = useState(false);
@@ -243,32 +301,56 @@ export default function RolesIndex({ roles, permissions }: Props) {
                                         Save Matrix
                                     </Button>
                                 </CardHeader>
-                                <CardContent className="pt-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {permissions.map((perm) => {
-                                            const checked = selectedPermissions.includes(perm.name);
-                                            return (
-                                                <div
-                                                    key={perm.id}
-                                                    onClick={() => handlePermissionToggle(perm.name)}
-                                                    className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                                                        checked
-                                                            ? 'border-emerald-200 bg-emerald-500/5 dark:border-emerald-900/50'
-                                                            : 'border-border hover:bg-muted/10'
-                                                    }`}
-                                                >
-                                                    <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all ${
-                                                        checked
-                                                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                            : 'border-border bg-background'
-                                                    }`}>
-                                                        {checked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                                                    </div>
-                                                    <span className="text-sm font-medium text-foreground">{perm.name}</span>
+                                <CardContent className="pt-6 space-y-8 max-h-[600px] overflow-y-auto">
+                                    {Object.entries(groupedPermissions).map(([groupName, groupPerms]) => (
+                                        <div key={groupName} className="space-y-3">
+                                            <h3 className="text-sm font-bold text-foreground border-b border-border pb-1.5 flex items-center justify-between">
+                                                <span>{groupName}</span>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleSelectAllGroup(groupPerms)}
+                                                        className="text-[10px] text-primary hover:underline cursor-pointer"
+                                                    >
+                                                        Select All
+                                                    </button>
+                                                    <span className="text-[10px] text-muted-foreground">|</span>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeselectAllGroup(groupPerms)}
+                                                        className="text-[10px] text-muted-foreground hover:text-rose-500 hover:underline cursor-pointer"
+                                                    >
+                                                        Deselect All
+                                                    </button>
                                                 </div>
-                                            );
-                                        })}
-                                    </div>
+                                            </h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {groupPerms.map((perm) => {
+                                                    const checked = selectedPermissions.includes(perm.name);
+                                                    return (
+                                                        <div
+                                                            key={perm.id}
+                                                            onClick={() => handlePermissionToggle(perm.name)}
+                                                            className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                                                                checked
+                                                                    ? 'border-emerald-200 bg-emerald-500/5 dark:border-emerald-900/50'
+                                                                    : 'border-border hover:bg-muted/10'
+                                                            }`}
+                                                        >
+                                                            <div className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all ${
+                                                                checked
+                                                                    ? 'bg-emerald-500 border-emerald-500 text-white'
+                                                                    : 'border-border bg-background'
+                                                            }`}>
+                                                                {checked && <Check className="h-3.5 w-3.5 stroke-[3]" />}
+                                                            </div>
+                                                            <span className="text-sm font-medium text-foreground">{perm.name}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </CardContent>
                             </>
                         ) : (

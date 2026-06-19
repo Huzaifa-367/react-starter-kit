@@ -52,8 +52,9 @@ class InvitationController extends Controller
 
         $inviteLink = route('register') . '?invitation_token=' . $invitation->token;
 
-        $dummyUser = new User();
+        $dummyUser = new \stdClass();
         $dummyUser->id = 0;
+        $dummyUser->name = 'Guest';
         $dummyUser->email = $request->email;
         $dummyUser->phone_number = $request->phone_number;
 
@@ -84,8 +85,9 @@ class InvitationController extends Controller
 
         $inviteLink = route('register') . '?invitation_token=' . $invitation->token;
 
-        $dummyUser = new User();
+        $dummyUser = new \stdClass();
         $dummyUser->id = 0;
+        $dummyUser->name = 'Guest';
         $dummyUser->email = $invitation->email;
         
         $metadata = $invitation->metadata ?? [];
@@ -137,8 +139,9 @@ class InvitationController extends Controller
 
         $inviteLink = route('register') . '?invitation_token=' . $invitation->token;
 
-        $dummyUser = new User();
+        $dummyUser = new \stdClass();
         $dummyUser->id = 0;
+        $dummyUser->name = 'Guest';
         $dummyUser->email = $request->email;
         $dummyUser->phone_number = $request->phone_number;
 

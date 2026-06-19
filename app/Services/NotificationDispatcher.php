@@ -10,6 +10,7 @@ use App\Services\OtpService;
 use App\Services\GreenApiService;
 use App\Services\TwilioService;
 use App\Services\FcmService;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -57,7 +58,7 @@ class NotificationDispatcher
     /**
      * Dispatch notification for a given event to all configured channels.
      */
-    public static function dispatch(User $user, string $event, array $options = []): void
+    public static function dispatch($user, string $event, array $options = []): void
     {
         if (!isset(self::$routing[$event])) {
             Log::warning("Notification event '{$event}' is not registered in routing table.");
@@ -68,8 +69,8 @@ class NotificationDispatcher
         $isOtpEvent = str_starts_with($event, 'otp_');
 
         // Extract placeholders
-        $sub = $user->getActiveSubscription();
-        $otpCode = $options['code'] ?? $options['otp_code'] ?? OtpService::getPlainOtp($user->id) ?? '000000';
+        $sub = ($user instanceof User) ? $user->getActiveSubscription() : null;
+        $otpCode = $options['code'] ?? $options['otp_code'] ?? (($user instanceof User) ? OtpService::getPlainOtp($user->id) : null) ?? '000000';
         
         // Ensure OTP code is serialized with options for queued mailables
         if (!isset($options['code'])) {
@@ -83,7 +84,7 @@ class NotificationDispatcher
         $renewsOn = $options['renews_on'] ?? ($sub?->ends_at ? $sub->ends_at->toDateString() : 'N/A');
         $price = $options['price'] ?? ($sub?->plan ? '$' . $sub->plan->price : '$0.00');
         $graceDaysLeft = $options['grace_days_left'] ?? $options['days'] ?? $sub?->plan?->grace_days ?? 7;
-        $reason = $options['reason'] ?? $user->suspended_reason ?? 'Violation of terms';
+        $reason = $options['reason'] ?? ($user->suspended_reason ?? null) ?? 'Violation of terms';
         $inviteLink = $options['invite_link'] ?? $options['link'] ?? url('/register');
 
         // Prepare Title and Body
@@ -91,8 +92,10 @@ class NotificationDispatcher
         $title = $titleBody['title'];
         $body = $titleBody['body'];
 
+        $userId = (!empty($user->id)) ? $user->id : null;
+
         // 1. Email Channel
-        if ($routes['email']) {
+        if ($routes['email'] && !empty($user->email) && self::isEmailConfigured()) {
             $skipEmail = false;
 
             // Check if OTP event and email is not in default channels
@@ -101,9 +104,9 @@ class NotificationDispatcher
             }
 
             // Check if user has bounced email
-            if ($user->email_bounced_at !== null) {
+            if (($user->email_bounced_at ?? null) !== null) {
                 $skipEmail = true;
-                Log::info("Skipping email for user {$user->id} because email has bounced.");
+                Log::info("Skipping email for user " . ($userId ?? 0) . " because email has bounced.");
             }
 
             if (!$skipEmail) {
@@ -112,7 +115,7 @@ class NotificationDispatcher
                     try {
                         Mail::to($user->email)->send(new $mailClass($user, $options));
                         NotificationLog::create([
-                            'user_id' => $user->id,
+                            'user_id' => $userId,
                             'channel' => 'email',
                             'type' => $event,
                             'recipient' => $user->email,
@@ -121,7 +124,7 @@ class NotificationDispatcher
                         ]);
                     } catch (\Exception $e) {
                         NotificationLog::create([
-                            'user_id' => $user->id,
+                            'user_id' => $userId,
                             'channel' => 'email',
                             'type' => $event,
                             'recipient' => $user->email,
@@ -133,7 +136,7 @@ class NotificationDispatcher
                     // Fallback log for dev or if mail class isn't created yet
                     Log::info("Mail class '{$mailClass}' not found. Simulated sending email to {$user->email}.");
                     NotificationLog::create([
-                        'user_id' => $user->id,
+                        'user_id' => $userId,
                         'channel' => 'email',
                         'type' => $event,
                         'recipient' => $user->email,
@@ -145,7 +148,7 @@ class NotificationDispatcher
         }
 
         // 2. WhatsApp Channel
-        if ($routes['whatsapp'] && $user->phone_number !== null) {
+        if ($routes['whatsapp'] && !empty($user->phone_number) && self::isWhatsappConfigured()) {
             $skipWa = false;
             if ($isOtpEvent && !in_array('whatsapp', OtpService::getChannels())) {
                 $skipWa = true;
@@ -178,7 +181,7 @@ class NotificationDispatcher
         }
 
         // 3. SMS Channel
-        if ($routes['sms'] && $user->phone_number !== null) {
+        if ($routes['sms'] && !empty($user->phone_number) && self::isSmsConfigured()) {
             $skipSms = false;
             if ($isOtpEvent && !in_array('sms', OtpService::getChannels())) {
                 $skipSms = true;
@@ -202,12 +205,12 @@ class NotificationDispatcher
                 $skipFcm = true;
             }
 
-            // Skip if user does not have active FCM tokens
-            if (!FcmToken::where('user_id', $user->id)->active()->exists()) {
+            // Skip if user does not have active FCM tokens or is a dummy user
+            if (empty($userId) || !FcmToken::where('user_id', $userId)->active()->exists()) {
                 $skipFcm = true;
             }
 
-            if (!$skipFcm) {
+            if (!$skipFcm && ($user instanceof User)) {
                 $fcm = new FcmService();
                 $fcm->sendToUser($user, $title, $body, ['type' => $event]);
                 // FcmService internally logs to notification_logs.
@@ -215,10 +218,10 @@ class NotificationDispatcher
         }
 
         // 5. In-App Notification Channel
-        if ($routes['in_app']) {
+        if ($routes['in_app'] && !empty($userId)) {
             try {
                 UserNotification::create([
-                    'user_id' => $user->id,
+                    'user_id' => $userId,
                     'type' => $event,
                     'title' => $title,
                     'body' => $body,
@@ -322,5 +325,42 @@ class NotificationDispatcher
                     'body' => 'You have received a new notification.'
                 ];
         }
+    }
+
+    /**
+     * Check if email channel is configured.
+     */
+    public static function isEmailConfigured(): bool
+    {
+        $mailer = config('mail.default');
+        if (empty($mailer)) {
+            return false;
+        }
+        if ($mailer === 'smtp') {
+            $host = config('mail.mailers.smtp.host') ?: Setting::get('mail_host');
+            return !empty($host);
+        }
+        return true;
+    }
+
+    /**
+     * Check if WhatsApp channel is configured.
+     */
+    public static function isWhatsappConfigured(): bool
+    {
+        $idInstance = Setting::get('green_api_id_instance') ?: config('services.green_api.id_instance');
+        $tokenInstance = Setting::get('green_api_token_instance') ?: config('services.green_api.token_instance');
+        return !empty($idInstance) && !empty($tokenInstance);
+    }
+
+    /**
+     * Check if SMS/Twilio channel is configured.
+     */
+    public static function isSmsConfigured(): bool
+    {
+        $sid = Setting::get('twilio_account_sid') ?: config('services.twilio.sid');
+        $token = Setting::get('twilio_auth_token') ?: config('services.twilio.token');
+        $from = Setting::get('twilio_from_number') ?: config('services.twilio.from');
+        return !empty($sid) && !empty($token) && !empty($from);
     }
 }
