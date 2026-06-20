@@ -20,13 +20,12 @@ return new class extends Migration
                 $table->text('description')->nullable();
                 $table->decimal('price', 10, 2);
                 $table->string('currency', 3)->default('USD');
-                $table->enum('billing_period', ['month', 'year', 'lifetime'])->default('month')->index();
+                $table->enum('billing_period', ['monthly', 'yearly', 'lifetime'])->default('monthly')->index();
                 $table->unsignedSmallInteger('trial_days')->default(0);
                 $table->unsignedSmallInteger('grace_days')->default(7);
                 $table->smallInteger('sort_order')->default(0)->index();
                 $table->boolean('is_active')->default(true)->index();
-                $table->string('stripe_monthly_price_id', 100)->nullable();
-                $table->string('stripe_yearly_price_id', 100)->nullable();
+                $table->string('stripe_price_id', 100)->nullable();
                 $table->string('stripe_product_id', 100)->nullable();
                 $table->json('metadata')->nullable();
                 $table->timestamps();

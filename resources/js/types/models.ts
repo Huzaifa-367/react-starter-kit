@@ -43,7 +43,7 @@ export interface Plan {
   slug: string;
   price: number;
   currency: string;
-  billing_period: 'month' | 'year' | 'lifetime';
+  billing_period: 'monthly' | 'yearly' | 'lifetime';
   trial_days: number;
   grace_days: number;
   is_active: boolean;

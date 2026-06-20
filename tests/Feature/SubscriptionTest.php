@@ -51,7 +51,7 @@ class SubscriptionTest extends TestCase
             'slug' => 'free-starter',
             'price' => 0.00,
             'currency' => 'USD',
-            'billing_period' => 'month',
+            'billing_period' => 'monthly',
             'trial_days' => 0,
             'grace_days' => 0,
             'sort_order' => 1,
@@ -64,7 +64,7 @@ class SubscriptionTest extends TestCase
             'slug' => 'pro-monthly',
             'price' => 19.99,
             'currency' => 'USD',
-            'billing_period' => 'month',
+            'billing_period' => 'monthly',
             'trial_days' => 0,
             'grace_days' => 5,
             'sort_order' => 2,
@@ -252,5 +252,57 @@ class SubscriptionTest extends TestCase
         $this->assertEquals('grace', $sub->status);
         $this->assertNotNull($sub->grace_ends_at);
         $this->assertNotNull($sub->payment_failed_at);
+    }
+
+    /** @test */
+    public function test_stripe_webhook_invoice_payment_succeeded_resets_usages_and_reactivates_subscription()
+    {
+        $sub = Subscription::create([
+            'user_id' => $this->user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
+            'plan_id' => $this->paidPlan->id,
+            'name' => 'main',
+            'status' => 'grace',
+            'stripe_id' => 'sub_stripe_123',
+            'auto_renew' => true,
+            'payment_failed_at' => now(),
+            'grace_ends_at' => now()->addDays(5),
+        ]);
+
+        $usage = SubscriptionUsage::create([
+            'subscription_id' => $sub->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
+            'feature_id' => 1,
+            'feature_slug' => 'projects',
+            'used' => 5,
+        ]);
+
+        $eventId = 'evt_test_payment_succeeded';
+        $payload = [
+            'id' => $eventId,
+            'type' => 'invoice.payment_succeeded',
+            'data' => [
+                'object' => [
+                    'id' => 'in_test_invoice',
+                    'subscription' => 'sub_stripe_123',
+                    'customer' => 'cus_stripe_123',
+                    'billing_reason' => 'subscription_cycle',
+                ]
+            ]
+        ];
+
+        $response = $this->postJson('/stripe/webhook', $payload);
+
+        $response->assertStatus(200);
+
+        $sub->refresh();
+        $this->assertEquals('active', $sub->status);
+        $this->assertNull($sub->grace_ends_at);
+        $this->assertNull($sub->payment_failed_at);
+
+        $usage->refresh();
+        $this->assertEquals(0, $usage->used);
     }
 }

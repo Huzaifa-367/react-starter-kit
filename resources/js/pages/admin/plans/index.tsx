@@ -53,8 +53,7 @@ interface PlanItem {
     sort_order: number;
     is_active: boolean;
     stripe_product_id: string | null;
-    stripe_monthly_price_id: string | null;
-    stripe_yearly_price_id: string | null;
+    stripe_price_id: string | null;
     features: Array<{
         id: number;
         name: string;
@@ -89,8 +88,7 @@ export default function PlansIndex({ plans, features }: Props) {
         sort_order: 0,
         is_active: true,
         stripe_product_id: '',
-        stripe_monthly_price_id: '',
-        stripe_yearly_price_id: '',
+        stripe_price_id: '',
     });
 
     const featuresForm = useForm({
@@ -112,8 +110,7 @@ export default function PlansIndex({ plans, features }: Props) {
             sort_order: plans.length + 1,
             is_active: true,
             stripe_product_id: '',
-            stripe_monthly_price_id: '',
-            stripe_yearly_price_id: '',
+            stripe_price_id: '',
         });
         setCreateOpen(true);
     };
@@ -133,8 +130,7 @@ export default function PlansIndex({ plans, features }: Props) {
             sort_order: plan.sort_order,
             is_active: plan.is_active,
             stripe_product_id: plan.stripe_product_id || '',
-            stripe_monthly_price_id: plan.stripe_monthly_price_id || '',
-            stripe_yearly_price_id: plan.stripe_yearly_price_id || '',
+            stripe_price_id: plan.stripe_price_id || '',
         });
         setEditOpen(true);
     };
@@ -461,25 +457,14 @@ export default function PlansIndex({ plans, features }: Props) {
                                         onChange={(e) => planForm.setData('stripe_product_id', e.target.value)}
                                     />
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="stripe-price-mo">Monthly Price ID</Label>
-                                        <Input
-                                            id="stripe-price-mo"
-                                            placeholder="price_..."
-                                            value={planForm.data.stripe_monthly_price_id}
-                                            onChange={(e) => planForm.setData('stripe_monthly_price_id', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="stripe-price-yr">Yearly Price ID</Label>
-                                        <Input
-                                            id="stripe-price-yr"
-                                            placeholder="price_..."
-                                            value={planForm.data.stripe_yearly_price_id}
-                                            onChange={(e) => planForm.setData('stripe_yearly_price_id', e.target.value)}
-                                        />
-                                    </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="stripe-price-id">Stripe Price ID</Label>
+                                    <Input
+                                        id="stripe-price-id"
+                                        placeholder="price_..."
+                                        value={planForm.data.stripe_price_id}
+                                        onChange={(e) => planForm.setData('stripe_price_id', e.target.value)}
+                                    />
                                 </div>
                             </div>
 

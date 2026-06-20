@@ -145,7 +145,7 @@ class LoginTest extends TestCase
             'slug' => 'free-starter',
             'price' => 0.00,
             'currency' => 'USD',
-            'billing_period' => 'month',
+            'billing_period' => 'monthly',
             'trial_days' => 0,
             'grace_days' => 0,
             'sort_order' => 0,

@@ -50,9 +50,9 @@ export default function Pricing({ plans, activeSubscription }: Props) {
             return true;
         }
         if (billingCycle === 'monthly') {
-            return plan.billing_period === 'month';
+            return plan.billing_period === 'monthly';
         } else {
-            return plan.billing_period === 'year';
+            return plan.billing_period === 'yearly';
         }
     });
 
@@ -92,7 +92,7 @@ export default function Pricing({ plans, activeSubscription }: Props) {
                     next_billing_date: string;
                 }>('/billing/proration-preview', {
                     plan_id: plan.id,
-                    billing_cycle: plan.billing_period === 'year' ? 'yearly' : 'monthly',
+                    billing_cycle: plan.billing_period === 'yearly' ? 'yearly' : 'monthly',
                 });
                 setProrationDetails(data);
             } catch (error: any) {
@@ -110,7 +110,7 @@ export default function Pricing({ plans, activeSubscription }: Props) {
         try {
             const { data } = await apiPost<{ checkout_url?: string; redirect?: string }>('/billing/checkout', {
                 plan_id: plan.id,
-                billing_cycle: plan.billing_period === 'year' ? 'yearly' : 'monthly',
+                billing_cycle: plan.billing_period === 'yearly' ? 'yearly' : 'monthly',
             });
 
             if (data.checkout_url) {
@@ -255,8 +255,8 @@ export default function Pricing({ plans, activeSubscription }: Props) {
                                             {formatPrice(plan.price)}
                                         </span>
                                         <span className="ml-1 text-sm font-semibold text-muted-foreground">
-                                            {plan.billing_period === 'month' && '/mo'}
-                                            {plan.billing_period === 'year' && '/yr'}
+                                            {plan.billing_period === 'monthly' && '/mo'}
+                                            {plan.billing_period === 'yearly' && '/yr'}
                                             {plan.billing_period === 'lifetime' && ' lifetime'}
                                         </span>
                                     </div>

@@ -29,7 +29,7 @@ class StripeBillingController extends Controller
     {
         $request->validate([
             'plan_id' => ['required', 'exists:plans,id'],
-            'billing_cycle' => ['required', 'in:monthly,yearly'],
+            'billing_cycle' => ['nullable', 'in:monthly,yearly'],
             'coupon' => ['nullable', 'string'],
         ]);
 
@@ -71,13 +71,14 @@ class StripeBillingController extends Controller
         }
 
         // Determine correct Price ID
-        $priceId = $request->billing_cycle === 'yearly'
-            ? $plan->stripe_yearly_price_id
-            : $plan->stripe_monthly_price_id;
+        $priceId = $plan->stripe_price_id;
+        $billingCycle = $request->input('billing_cycle') ?: ($plan->billing_period === 'yearly' ? 'yearly' : 'monthly');
 
         if (!$priceId) {
             return response()->json(['error' => 'Selected plan does not have a Stripe Price configured.'], 422);
         }
+
+        $isLifetime = $plan->billing_period === 'lifetime';
 
         // Build Stripe Checkout Session
         $sessionParams = [
@@ -86,14 +87,14 @@ class StripeBillingController extends Controller
                 'price' => $priceId,
                 'quantity' => 1,
             ]],
-            'mode' => 'subscription',
+            'mode' => $isLifetime ? 'payment' : 'subscription',
             'success_url' => route('billing.success') . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => route('pricing'),
             'allow_promotion_codes' => true,
             'metadata' => [
                 'user_id' => $user->id,
                 'plan_id' => $plan->id,
-                'billing_cycle' => $request->billing_cycle,
+                'billing_cycle' => $billingCycle,
             ],
         ];
 
@@ -102,8 +103,8 @@ class StripeBillingController extends Controller
             $sessionParams['discounts'] = [['coupon' => $request->coupon]];
         }
 
-        // Attach trial days if configured on plan
-        if ($plan->trial_days > 0) {
+        // Attach trial days if configured on plan (only applicable to subscription mode)
+        if ($plan->trial_days > 0 && !$isLifetime) {
             $sessionParams['subscription_data'] = [
                 'trial_period_days' => $plan->trial_days,
             ];
@@ -125,7 +126,7 @@ class StripeBillingController extends Controller
     {
         $request->validate([
             'plan_id' => ['required', 'exists:plans,id'],
-            'billing_cycle' => ['required', 'in:monthly,yearly'],
+            'billing_cycle' => ['nullable', 'in:monthly,yearly'],
         ]);
 
         $user = $request->user();
@@ -141,9 +142,7 @@ class StripeBillingController extends Controller
         }
 
         $newPlan = Plan::findOrFail($request->plan_id);
-        $newPriceId = $request->billing_cycle === 'yearly'
-            ? $newPlan->stripe_yearly_price_id
-            : $newPlan->stripe_monthly_price_id;
+        $newPriceId = $newPlan->stripe_price_id;
 
         $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
         if (!$stripeSecret || !$newPriceId) {
@@ -237,9 +236,10 @@ class StripeBillingController extends Controller
                     $plan = Plan::find($planId);
                     if ($user && $plan) {
                         $subManager = new SubscriptionManager();
-                        $exists = \App\Models\Subscription::where('stripe_id', $session->subscription)->exists();
+                        $stripeId = $session->subscription ?? $session->payment_intent ?? $session->id;
+                        $exists = \App\Models\Subscription::where('stripe_id', $stripeId)->exists();
                         if (!$exists) {
-                            $subManager->subscribeTo($user, $plan, $session->subscription);
+                            $subManager->subscribeTo($user, $plan, $stripeId);
                         }
                     }
                 }
@@ -352,7 +352,8 @@ class StripeBillingController extends Controller
                         $user = User::find($userId);
                         $plan = Plan::find($planId);
                         if ($user && $plan) {
-                            $subManager->subscribeTo($user, $plan, $session->subscription);
+                            $stripeId = $session->subscription ?? $session->payment_intent ?? $session->id;
+                            $subManager->subscribeTo($user, $plan, $stripeId);
                         }
                     }
                     break;
@@ -361,6 +362,18 @@ class StripeBillingController extends Controller
                 case 'customer.subscription.deleted':
                     $stripeSubscription = $event->data->object;
                     $subManager->syncFromStripe($stripeSubscription);
+                    break;
+
+                case 'invoice.payment_succeeded':
+                    $invoice = $event->data->object;
+                    // Reset usages and restore status on recurring renewals or past-due manual invoice payments
+                    $stripeSubId = $invoice->subscription;
+                    if ($stripeSubId) {
+                        $sub = \App\Models\Subscription::where('stripe_id', $stripeSubId)->first();
+                        if ($sub) {
+                            $subManager->handleRenewalSucceeded($sub);
+                        }
+                    }
                     break;
 
                 case 'invoice.payment_failed':

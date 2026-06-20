@@ -131,9 +131,7 @@ class SubscriptionManager
                 \Stripe\Stripe::setApiKey($stripeSecret);
                 $stripeSub = \Stripe\Subscription::retrieve($sub->stripe_id);
 
-                $priceId = $newPlan->billing_period === 'monthly'
-                    ? $newPlan->stripe_monthly_price_id
-                    : $newPlan->stripe_yearly_price_id;
+                $priceId = $newPlan->stripe_price_id;
 
                 if ($priceId && !empty($stripeSub->items->data)) {
                     $subItemId = $stripeSub->items->data[0]->id;
@@ -317,6 +315,50 @@ class SubscriptionManager
     }
 
     /**
+     * Handle successful renewal payment or payment recovery.
+     */
+    public function handleRenewalSucceeded(Subscription $sub): void
+    {
+        $metadata = $sub->metadata ?? [];
+        unset($metadata['payment_failed_at']);
+        unset($metadata['next_retry_at']);
+
+        $sub->update([
+            'status' => 'active',
+            'payment_failed_at' => null,
+            'grace_ends_at' => null,
+            'metadata' => $metadata,
+        ]);
+
+        foreach ($sub->usages as $usage) {
+            $feature = Feature::find($usage->feature_id);
+            if (!$feature) {
+                continue;
+            }
+
+            $nextResetAt = null;
+            if ($feature->resettable_period === 'daily') {
+                $nextResetAt = Carbon::now()->addDay();
+            } elseif ($feature->resettable_period === 'weekly') {
+                $nextResetAt = Carbon::now()->addWeek();
+            } elseif ($feature->resettable_period === 'monthly') {
+                $nextResetAt = Carbon::now()->addMonth();
+            } elseif ($feature->resettable_period === 'yearly') {
+                $nextResetAt = Carbon::now()->addYear();
+            }
+
+            $usage->update([
+                'used' => 0,
+                'overage' => 0,
+                'last_reset_at' => Carbon::now(),
+                'reset_at' => $nextResetAt,
+            ]);
+        }
+
+        $sub->user->flushSubscriptionCache();
+    }
+
+    /**
      * Resume a canceled subscription before the period ends.
      */
     public function resume(User $user): Subscription
@@ -444,8 +486,7 @@ class SubscriptionManager
         // If the price ID has changed, find the plan corresponding to that price and update plan_id
         if (!empty($stripeSubscription->items->data)) {
             $stripePriceId = $stripeSubscription->items->data[0]->price->id;
-            $newPlan = Plan::where('stripe_monthly_price_id', $stripePriceId)
-                ->orWhere('stripe_yearly_price_id', $stripePriceId)
+            $newPlan = Plan::where('stripe_price_id', $stripePriceId)
                 ->first();
             
             if ($newPlan && $sub->plan_id !== $newPlan->id) {

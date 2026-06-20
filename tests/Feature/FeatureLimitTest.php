@@ -45,7 +45,7 @@ class FeatureLimitTest extends TestCase
             'slug' => 'starter',
             'price' => 5.00,
             'currency' => 'USD',
-            'billing_period' => 'month',
+            'billing_period' => 'monthly',
             'trial_days' => 0,
             'grace_days' => 0,
             'is_active' => true,

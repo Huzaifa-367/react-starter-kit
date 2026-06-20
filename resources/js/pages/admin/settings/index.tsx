@@ -35,6 +35,13 @@ export default function SettingsIndex({ settings }: Props) {
     const groups = Object.keys(settings);
     const [activeGroup, setActiveGroup] = useState<string>(groups[0] || 'app');
     const [syncing, setSyncing] = useState<boolean>(false);
+    const [origin, setOrigin] = useState<string>('http://your-domain.com');
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setOrigin(window.location.origin);
+        }
+    }, []);
 
     const handleSyncWhatsapp = () => {
         setSyncing(true);
@@ -303,6 +310,68 @@ export default function SettingsIndex({ settings }: Props) {
                                         </div>
                                     );
                                 })}
+
+                                {activeGroup === 'stripe' && (
+                                    <div className="border-t border-border pt-6 mt-6 space-y-4">
+                                        <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                                            <CreditCard className="h-4 w-4 text-primary" />
+                                            Stripe Webhook Configuration Guide
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground">
+                                            Follow these steps in your Stripe Dashboard to automate subscription lifecycle actions, handle payments, and synchronise plans.
+                                        </p>
+                                        <div className="bg-muted/50 border border-border rounded-xl p-4 space-y-3">
+                                            <div className="grid gap-1">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">1. Webhook Endpoint URL</span>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <code className="text-xs bg-background border border-border px-2.5 py-1.5 rounded-md font-mono select-all flex-1">
+                                                        {origin}/stripe/webhook
+                                                    </code>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(`${origin}/stripe/webhook`);
+                                                            toast.success('Webhook URL copied to clipboard!');
+                                                        }}
+                                                        className="h-8 text-xs cursor-pointer"
+                                                    >
+                                                        Copy
+                                                    </Button>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-1 border-t border-border pt-3">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">2. Events to Select</span>
+                                                <p className="text-xs text-muted-foreground mb-1.5">
+                                                    Configure these exact events under the "Select events to listen to" section in Stripe:
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    <Badge variant="outline" className="font-mono text-[10px] bg-background/50 border-border">
+                                                        checkout.session.completed
+                                                    </Badge>
+                                                    <Badge variant="outline" className="font-mono text-[10px] bg-background/50 border-border">
+                                                        customer.subscription.updated
+                                                    </Badge>
+                                                    <Badge variant="outline" className="font-mono text-[10px] bg-background/50 border-border">
+                                                        customer.subscription.deleted
+                                                    </Badge>
+                                                    <Badge variant="outline" className="font-mono text-[10px] bg-background/50 border-border">
+                                                        invoice.payment_failed
+                                                    </Badge>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid gap-1 border-t border-border pt-3">
+                                                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">3. Webhook Secret Key</span>
+                                                <p className="text-xs text-muted-foreground leading-relaxed">
+                                                    Once the webhook is created, click <strong>Reveal</strong> under "Signing secret" in Stripe, and paste it into the <strong>Stripe Webhook Secret</strong> field above. It usually starts with <code>whsec_...</code>.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
 
                                 {activeGroup === 'smtp' && (
                                     <div className="border-t border-border pt-6 mt-6 space-y-4">

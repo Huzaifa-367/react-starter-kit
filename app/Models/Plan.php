@@ -23,8 +23,7 @@ class Plan extends Model
         'grace_days',
         'sort_order',
         'is_active',
-        'stripe_monthly_price_id',
-        'stripe_yearly_price_id',
+        'stripe_price_id',
         'stripe_product_id',
         'metadata',
     ];
@@ -76,4 +75,5 @@ class Plan extends Model
     {
         return $query->orderBy('sort_order', 'asc');
     }
+
 }

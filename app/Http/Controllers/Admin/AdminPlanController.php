@@ -49,15 +49,14 @@ class AdminPlanController extends Controller
             'sort_order' => ['nullable', 'integer'],
             'is_active' => ['boolean'],
             'stripe_product_id' => ['nullable', 'string'],
-            'stripe_monthly_price_id' => ['nullable', 'string'],
-            'stripe_yearly_price_id' => ['nullable', 'string'],
+            'stripe_price_id' => ['nullable', 'string'],
             'features' => ['nullable', 'array'],
         ]);
 
         $plan = Plan::create($request->only([
             'name', 'slug', 'description', 'price', 'currency', 'billing_period',
             'trial_days', 'grace_days', 'sort_order', 'is_active',
-            'stripe_product_id', 'stripe_monthly_price_id', 'stripe_yearly_price_id'
+            'stripe_product_id', 'stripe_price_id'
         ]));
 
         if ($request->filled('features')) {
@@ -88,15 +87,14 @@ class AdminPlanController extends Controller
             'sort_order' => ['nullable', 'integer'],
             'is_active' => ['boolean'],
             'stripe_product_id' => ['nullable', 'string'],
-            'stripe_monthly_price_id' => ['nullable', 'string'],
-            'stripe_yearly_price_id' => ['nullable', 'string'],
+            'stripe_price_id' => ['nullable', 'string'],
             'features' => ['nullable', 'array'],
         ]);
 
         $plan->update($request->only([
             'name', 'slug', 'description', 'price', 'currency', 'billing_period',
             'trial_days', 'grace_days', 'sort_order', 'is_active',
-            'stripe_product_id', 'stripe_monthly_price_id', 'stripe_yearly_price_id'
+            'stripe_product_id', 'stripe_price_id'
         ]));
 
         if ($request->has('features')) {

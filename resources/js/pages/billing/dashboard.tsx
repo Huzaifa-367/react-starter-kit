@@ -186,7 +186,7 @@ export default function BillingDashboard({ subscription, usages, invoices }: Pro
                                         }).format(subscription.plan.price)}
                                     </span>
                                     <span className="ml-1 text-sm font-semibold text-muted-foreground">
-                                        /{subscription.plan.billing_period === 'month' ? 'month' : subscription.plan.billing_period === 'year' ? 'year' : 'lifetime'}
+                                        /{subscription.plan.billing_period === 'monthly' ? 'month' : subscription.plan.billing_period === 'yearly' ? 'year' : 'lifetime'}
                                     </span>
                                 </div>
 
