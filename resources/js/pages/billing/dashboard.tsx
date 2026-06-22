@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { Subscription } from '@/types/models';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +49,8 @@ interface Props {
 }
 
 export default function BillingDashboard({ subscription, usages, invoices }: Props) {
+    const { auth } = usePage<any>().props;
+    const user = auth?.user;
     const [portalLoading, setPortalLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -76,7 +78,7 @@ export default function BillingDashboard({ subscription, usages, invoices }: Pro
                 onSuccess: () => {
                     toast.success('Subscription scheduled to cancel at period end.');
                 },
-                onError: (err) => {
+                onError: (err: any) => {
                     toast.error(err.error || 'Failed to cancel subscription.');
                 },
                 onFinish: () => setActionLoading(null),
@@ -93,7 +95,7 @@ export default function BillingDashboard({ subscription, usages, invoices }: Pro
                 onSuccess: () => {
                     toast.success('Subscription auto-renewal resumed successfully!');
                 },
-                onError: (err) => {
+                onError: (err: any) => {
                     toast.error(err.error || 'Failed to resume subscription.');
                 },
                 onFinish: () => setActionLoading(null),
@@ -139,19 +141,21 @@ export default function BillingDashboard({ subscription, usages, invoices }: Pro
                                 <ArrowUpRight className="ml-2 h-4 w-4" />
                             </Button>
                         </Link>
-                        <Button
-                            onClick={handleStripePortal}
-                            disabled={portalLoading}
-                            size="sm"
-                            className="bg-primary text-primary-foreground hover:bg-primary/90"
-                        >
-                            {portalLoading ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Settings className="mr-2 h-4 w-4" />
-                            )}
-                            Customer Portal
-                        </Button>
+                        {user?.stripe_id && (
+                            <Button
+                                onClick={handleStripePortal}
+                                disabled={portalLoading}
+                                size="sm"
+                                className="bg-primary text-primary-foreground hover:bg-primary/90"
+                            >
+                                {portalLoading ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Settings className="mr-2 h-4 w-4" />
+                                )}
+                                Customer Portal
+                            </Button>
+                        )}
                     </div>
                 </div>
 

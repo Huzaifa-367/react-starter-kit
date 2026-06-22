@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
 
         // Eager load roles and onboarding if logged in
         if ($user) {
-            $user->loadMissing(['roles', 'onboarding']);
+            $user->loadMissing(['roles', 'onboarding', 'activeSubscription.plan.features']);
         }
 
         // Cache app branding settings for 24 hours
@@ -69,8 +69,8 @@ class HandleInertiaRequests extends Middleware
         // Impersonation info
         $isImpersonating = $request->session()->has('impersonating_admin_id');
         $impersonatingAs = null;
-        if ($isImpersonating) {
-            $impersonatingAs = User::find($request->session()->get('impersonating_admin_id'))?->name;
+        if ($isImpersonating && $user) {
+            $impersonatingAs = $user->name;
         }
 
         // Unread notifications count (cache for 60s)

@@ -27,7 +27,7 @@ class DashboardTest extends TestCase
             'slug' => 'free-starter',
             'price' => 0.00,
             'currency' => 'USD',
-            'billing_period' => 'monthly',
+            'billing_period' => 'lifetime',
             'trial_days' => 0,
             'grace_days' => 0,
             'sort_order' => 0,

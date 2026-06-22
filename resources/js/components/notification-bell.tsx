@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { usePage, router } from '@inertiajs/react';
 import { Bell, Check, CheckSquare, MessageSquare } from 'lucide-react';
+import { read, readAll } from '@/routes/notifications';
 
 interface Notification {
   id: number;
@@ -58,7 +59,7 @@ export function NotificationBell() {
   }, []);
 
   const markAsRead = (id: number) => {
-    router.post(route('notifications.read', id), {}, {
+    router.post(read(id).url, {}, {
       preserveScroll: true,
       onSuccess: () => {
         setNotifications(prev =>
@@ -69,7 +70,7 @@ export function NotificationBell() {
   };
 
   const markAllRead = () => {
-    router.post(route('notifications.read-all'), {}, {
+    router.post(readAll().url, {}, {
       preserveScroll: true,
       onSuccess: () => {
         setNotifications(prev =>

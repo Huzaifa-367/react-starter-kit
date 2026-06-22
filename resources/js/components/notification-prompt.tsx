@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { router } from '@inertiajs/react';
+import { register } from '@/routes/fcm';
 
 export function NotificationPrompt() {
   useEffect(() => {
@@ -40,7 +41,7 @@ export function NotificationPrompt() {
           localStorage.setItem('fcm_token', mockToken);
           
           // Register fcm token with backend
-          router.post(route('fcm.register'), {
+          router.post(register().url, {
             token: mockToken,
             device_type: getDeviceType(),
             device_name: navigator.userAgent.substring(0, 100)

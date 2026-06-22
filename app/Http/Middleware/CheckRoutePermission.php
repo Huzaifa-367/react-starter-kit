@@ -65,6 +65,7 @@ class CheckRoutePermission
             'billing.success',
             'billing.checkout',
             'billing.proration-preview',
+            'admin.impersonation.stop',
         ];
 
         if (in_array($routeName, $exclusions)) {

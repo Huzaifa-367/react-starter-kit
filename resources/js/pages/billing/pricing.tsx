@@ -78,7 +78,10 @@ export default function Pricing({ plans, activeSubscription }: Props) {
         }
 
         // If user has an active subscription and wants to switch
-        if (activeSubscription) {
+        // BUT if they are on a Free plan and moving to a paid plan, they must go through Stripe Checkout
+        const isFreeToPaid = activeSubscription && Number(activeSubscription.plan.price) === 0 && Number(plan.price) > 0;
+
+        if (activeSubscription && !isFreeToPaid) {
             setSelectedPlan(plan);
             setProrationOpen(true);
             setProrationLoading(true);

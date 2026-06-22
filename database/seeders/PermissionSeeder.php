@@ -187,6 +187,10 @@ class PermissionSeeder extends Seeder
         $subscribedRole->syncPermissions($subscribedRolePermissions);
 
         // Sync to User (Free)
-        $freeRole->syncPermissions($profilePermissions);
+        $freeRolePermissions = array_merge(
+            $billingPermissions,
+            $profilePermissions
+        );
+        $freeRole->syncPermissions($freeRolePermissions);
     }
 }

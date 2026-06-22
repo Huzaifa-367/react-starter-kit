@@ -33,7 +33,7 @@ export function AppSidebar() {
     const { props } = usePage<any>();
     const user = props.auth?.user;
     
-    const isSubscribed = user?.roles?.some((r: any) => r.name === 'User (Subscribed)' || r.name === 'Admin' || r.name === 'Super Admin') || false;
+    const isSubscribed = user?.roles?.some((r: any) => r.name === 'User (Subscribed)' || r.name === 'User (Free)' || r.name === 'Admin' || r.name === 'Super Admin') || false;
 
     const mainNavItems: NavItem[] = [
         {
@@ -47,6 +47,11 @@ export function AppSidebar() {
         mainNavItems.push({
             title: 'Plans',
             href: '/pricing/subscribed',
+            icon: CreditCard,
+        });
+        mainNavItems.push({
+            title: 'Billing',
+            href: '/billing',
             icon: CreditCard,
         });
     }

@@ -72,14 +72,6 @@ class RegisteredUserController extends Controller
             'referral_code' => $referralCode,
         ]);
 
-        // Assign role 'User (Free)'
-        if (\Spatie\Permission\Models\Role::where('name', 'User (Free)')->exists()) {
-            $user->assignRole('User (Free)');
-        } else if (!app()->environment('production')) {
-            \Spatie\Permission\Models\Role::create(['name' => 'User (Free)', 'guard_name' => 'web']);
-            $user->assignRole('User (Free)');
-        }
-
         // Create onboarding progress
         OnboardingProgress::create([
             'user_id' => $user->id,

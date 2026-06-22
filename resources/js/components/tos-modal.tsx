@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { usePage, router } from '@inertiajs/react';
 import { ShieldCheck, ArrowRight, ExternalLink } from 'lucide-react';
+import { accept } from '@/routes/terms';
 
 export function TosModal() {
   const { tos } = usePage<any>().props;
@@ -12,7 +13,7 @@ export function TosModal() {
 
   const handleAccept = () => {
     setLoading(true);
-    router.post(route('terms.accept'), {}, {
+    router.post(accept().url, {}, {
       onFinish: () => setLoading(false)
     });
   };

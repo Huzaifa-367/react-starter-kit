@@ -308,7 +308,11 @@ export default function UsersIndex({ users, roles, plans, filters }: Props) {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => handleImpersonate(user)}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleImpersonate(user);
+                                                        }}
                                                         disabled={actionLoading === `impersonate-${user.id}`}
                                                         className="h-8 text-xs cursor-pointer"
                                                     >
@@ -349,7 +353,11 @@ export default function UsersIndex({ users, roles, plans, filters }: Props) {
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        onClick={() => handleDelete(user)}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleDelete(user);
+                                                        }}
                                                         disabled={actionLoading === `delete-${user.id}`}
                                                         className="h-8 w-8 hover:bg-rose-500/10 hover:text-rose-500 cursor-pointer"
                                                     >

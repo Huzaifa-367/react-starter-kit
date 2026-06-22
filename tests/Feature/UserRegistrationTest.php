@@ -46,7 +46,7 @@ class UserRegistrationTest extends TestCase
         ]);
 
         $user = User::where('email', 'john@example.com')->first();
-        $this->assertTrue($user->hasRole('User (Free)'));
+        $this->assertFalse($user->hasRole('User (Free)'));
         $this->assertNotNull($user->otp_code);
         $this->assertNotNull($user->otp_expires_at);
         $this->assertEquals('email_verify', $user->otp_purpose);

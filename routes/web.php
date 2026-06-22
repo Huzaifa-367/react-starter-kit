@@ -168,6 +168,8 @@ Route::middleware(['auth', 'subscribed', 'verified-tos'])->group(function () {
     });
 });
 
+Route::middleware(['auth', 'verified-tos'])->post('/admin/impersonation/stop', [AdminUserController::class, 'stopImpersonation'])->name('admin.impersonation.stop');
+
 // ─── ADMIN (subscription not required) ───────────────────────────────────
 Route::middleware(['auth', 'verified-tos', 'role:Admin|Super Admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
@@ -191,7 +193,6 @@ Route::middleware(['auth', 'verified-tos', 'role:Admin|Super Admin'])->prefix('a
         Route::post('/bulk', [AdminUserController::class, 'bulkAction'])->name('bulk');
         Route::post('/export', [AdminUserController::class, 'export'])->name('export');
     });
-    Route::post('/impersonation/stop', [AdminUserController::class, 'stopImpersonation'])->name('impersonation.stop');
 
     // Roles & Permissions
     Route::prefix('roles')->name('roles.')->group(function () {

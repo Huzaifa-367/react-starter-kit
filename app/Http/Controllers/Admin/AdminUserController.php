@@ -239,6 +239,10 @@ class AdminUserController extends Controller
     {
         $admin = Auth::user();
 
+        if (!$admin || (!$admin->hasRole('Admin') && !$admin->hasRole('Super Admin'))) {
+            abort(403, 'Only administrators can impersonate.');
+        }
+
         // Prevent unauthorized impersonation
         if ($user->hasRole('Super Admin') || ($user->hasRole('Admin') && !$admin->hasRole('Super Admin'))) {
             abort(403, 'You cannot impersonate this user.');

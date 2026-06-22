@@ -56,9 +56,9 @@ return [
     */
 
     'middleware' => [
-        'subscribed' => 'subscribed',
-        'plan' => 'plan',
-        'feature' => 'feature',
+        'subscribed' => 'subscriptionify.subscribed',
+        'plan' => 'subscriptionify.plan',
+        'feature' => 'subscriptionify.feature',
     ],
 
 ];

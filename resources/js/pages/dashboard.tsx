@@ -81,7 +81,11 @@ export default function Dashboard() {
                                             </Badge>
                                         )}
                                         <span className="text-xs text-muted-foreground">
-                                            {sub ? `Renews: ${new Date(sub.ends_at || sub.trial_ends_at).toLocaleDateString()}` : 'Please choose a plan to start.'}
+                                            {sub ? (
+                                                sub.plan.billing_period === 'lifetime'
+                                                    ? 'Lifetime Plan'
+                                                    : `Renews: ${new Date(sub.ends_at || sub.trial_ends_at).toLocaleDateString()}`
+                                            ) : 'Please choose a plan to start.'}
                                         </span>
                                     </div>
                                     <div className="pt-2">

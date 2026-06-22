@@ -122,6 +122,17 @@ class SubscriptionManager
             return $this->subscribeTo($user, $newPlan);
         }
 
+        if ($newPlan->isFree()) {
+            if ($sub->stripe_id) {
+                $this->cancelImmediately($sub);
+            }
+            return $this->subscribeTo($user, $newPlan);
+        }
+
+        if (!$sub->stripe_id && !$newPlan->isFree()) {
+            throw new \Exception("Cannot upgrade from a free plan to a paid plan without payment. Please subscribe via the Checkout portal.");
+        }
+
         $previousPlanId = $sub->plan_id;
 
         // Sync with Stripe if stripe_id and credentials exist

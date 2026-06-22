@@ -64,9 +64,6 @@ class SocialAuthController extends Controller
                     'avatar_path' => $socialUser->getAvatar(),
                 ]);
 
-                // Assign role 'User (Free)'
-                $user->assignRole('User (Free)');
-
                 // Create onboarding progress (with email already verified)
                 OnboardingProgress::create([
                     'user_id' => $user->id,

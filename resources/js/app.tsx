@@ -1,4 +1,5 @@
 import { createInertiaApp, usePage, Link } from '@inertiajs/react';
+import { createRoot } from 'react-dom/client';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { initializeTheme } from '@/hooks/use-appearance';
@@ -6,6 +7,7 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 import AdminLayout from '@/layouts/admin-layout';
+import ImpersonationBar from '@/components/impersonation-bar';
 import { Button } from '@/components/ui/button';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -62,29 +64,57 @@ const PricingLayoutWrapper = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
+const ImpersonationWrapper = ({ children }: { children: React.ReactNode }) => {
+    return (
+        <>
+            <ImpersonationBar />
+            {children}
+        </>
+    );
+};
+
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
+        let layout;
         switch (true) {
             case name === 'welcome':
-                return null;
+                layout = null;
+                break;
             case name === 'billing/pricing':
-                return PricingLayoutWrapper;
+                layout = PricingLayoutWrapper;
+                break;
             case name.startsWith('auth/'):
-                return AuthLayout;
+                layout = AuthLayout;
+                break;
             case name.startsWith('settings/'):
-                return [AppLayout, SettingsLayout];
+                layout = [AppLayout, SettingsLayout];
+                break;
             case name.startsWith('admin/'):
-                return AdminLayout;
+                layout = AdminLayout;
+                break;
             default:
-                return AppLayout;
+                layout = AppLayout;
+                break;
+        }
+
+        if (Array.isArray(layout)) {
+            return [ImpersonationWrapper, ...layout];
+        } else if (layout) {
+            return [ImpersonationWrapper, layout];
+        } else {
+            return ImpersonationWrapper;
         }
     },
     strictMode: true,
-    withApp(app) {
-        return (
+    setup({ el, App, props }) {
+        const root = (window as any).__reactRoot || createRoot(el);
+        if (!(window as any).__reactRoot) {
+            (window as any).__reactRoot = root;
+        }
+        root.render(
             <TooltipProvider delayDuration={0}>
-                {app}
+                <App {...props} />
                 <Toaster />
             </TooltipProvider>
         );

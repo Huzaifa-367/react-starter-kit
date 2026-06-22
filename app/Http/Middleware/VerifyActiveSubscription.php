@@ -14,6 +14,13 @@ class VerifyActiveSubscription
      */
     public function handle(Request $request, Closure $next): Response
     {
+        $routeName = $request->route()?->getName();
+        \Illuminate\Support\Facades\Log::info('VerifyActiveSubscription check at top:', [
+            'route_name' => $routeName,
+            'url' => $request->fullUrl(),
+            'user' => Auth::user()?->email,
+        ]);
+
         $user = Auth::user();
 
         if (!$user) {
@@ -42,10 +49,18 @@ class VerifyActiveSubscription
                 : redirect('/verify/otp?purpose=phone_verify');
         }
 
-        // If no valid subscription, redirect to pricing page
+        if ($routeName && (
+            $routeName === 'pricing' ||
+            $routeName === 'pricing.subscribed' ||
+            str_starts_with($routeName, 'billing.')
+        )) {
+            return $next($request);
+        }
+
+        // If no valid subscription, redirect to pricing page or return 403 JSON
         if (!$user->hasValidSubscription()) {
             return $request->expectsJson()
-                ? response()->json(['message' => 'Active subscription required.'], 402)
+                ? response()->json(['message' => 'Active subscription required.'], 403)
                 : redirect('/pricing');
         }
 
