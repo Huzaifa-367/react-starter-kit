@@ -15,7 +15,7 @@ class AdminMailController extends Controller
     /**
      * Send a direct diagnostic test email.
      */
-    public function sendTestEmail(Request $request)
+    public function sendTestEmail(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $request->validate([
             'email' => ['required', 'email'],
@@ -55,7 +55,7 @@ class AdminMailController extends Controller
     /**
      * Preview a template in the browser (returns raw HTML).
      */
-    public function previewTemplate(string $templateKey)
+    public function previewTemplate(string $templateKey): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\Response
     {
         $template = EmailTemplate::where('key', $templateKey)->first();
 
@@ -92,7 +92,10 @@ class AdminMailController extends Controller
             try {
                 $user = auth()->user() ?: User::first();
                 $mailable = new $mailClass($user, []);
-                return $mailable->render();
+                if ($mailable instanceof \Illuminate\Mail\Mailable) {
+                    return response($mailable->render());
+                }
+                throw new \Exception("Class is not a valid Mailable instance.");
             } catch (\Exception $e) {
                 return response("Unable to render mailable '{$mailClass}': " . $e->getMessage(), 500);
             }

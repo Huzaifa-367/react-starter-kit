@@ -29,11 +29,19 @@ class BulkUserExportJob implements ShouldQueue
     protected User $adminUser;
 
     /**
-     * Create a new job instance.
+     * @var array<int>|null
      */
-    public function __construct(User $adminUser)
+    protected ?array $userIds;
+
+    /**
+     * Create a new job instance.
+     *
+     * @param array<int>|null $userIds
+     */
+    public function __construct(User $adminUser, ?array $userIds = null)
     {
         $this->adminUser = $adminUser;
+        $this->userIds = $userIds;
         $this->queue = 'low';
     }
 
@@ -47,12 +55,23 @@ class BulkUserExportJob implements ShouldQueue
         $fileName = "exports/bulk_users_{$admin->id}_{$token}.csv";
 
         $tempFile = tempnam(sys_get_temp_dir(), 'user_export');
+        if ($tempFile === false) {
+            throw new \Exception("Failed to generate temporary file name.");
+        }
         $file = fopen($tempFile, 'w');
+        if ($file === false) {
+            throw new \Exception("Failed to open temporary file for writing.");
+        }
 
         // CSV headers
         fputcsv($file, ['ID', 'Name', 'Email', 'Phone Number', 'Role(s)', 'Active Plan', 'Subscription Status', 'Suspended', 'Created At']);
 
-        User::with(['roles', 'activeSubscription.plan'])->chunk(500, function ($users) use ($file) {
+        $query = User::with(['roles', 'activeSubscription.plan']);
+        if (!empty($this->userIds)) {
+            $query->whereIn('id', $this->userIds);
+        }
+
+        $query->chunk(500, function ($users) use ($file) {
             foreach ($users as $user) {
                 $sub = $user->activeSubscription;
                 fputcsv($file, [
@@ -72,7 +91,12 @@ class BulkUserExportJob implements ShouldQueue
         fclose($file);
 
         // Upload to public disk
-        Storage::disk('public')->put($fileName, fopen($tempFile, 'r'));
+        $readStream = fopen($tempFile, 'r');
+        if ($readStream === false) {
+            throw new \Exception("Failed to open temporary file for reading.");
+        }
+        Storage::disk('public')->put($fileName, $readStream);
+        fclose($readStream);
         unlink($tempFile);
 
         $downloadUrl = url(Storage::url($fileName));

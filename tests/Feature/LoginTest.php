@@ -17,7 +17,7 @@ class LoginTest extends TestCase
     use RefreshDatabase;
 
     /** @test */
-    public function suspended_user_cannot_login()
+    public function test_suspended_user_cannot_login()
     {
         $user = User::create([
             'name' => 'Suspended User',
@@ -45,7 +45,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function successful_login_updates_audit_metrics_and_writes_history()
+    public function test_successful_login_updates_audit_metrics_and_writes_history()
     {
         $user = User::create([
             'name' => 'Active User',
@@ -74,7 +74,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function admin_without_subscription_redirected_to_admin_dashboard()
+    public function test_admin_without_subscription_redirected_to_admin_dashboard()
     {
         Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
 
@@ -95,7 +95,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function admin_can_access_admin_dashboard_without_subscription()
+    public function test_admin_can_access_admin_dashboard_without_subscription()
     {
         Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
 
@@ -113,7 +113,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function user_without_valid_subscription_redirected_to_pricing()
+    public function test_user_without_valid_subscription_redirected_to_pricing()
     {
         $user = User::create([
             'name' => 'Active User',
@@ -131,7 +131,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function user_with_valid_subscription_redirected_to_dashboard()
+    public function test_user_with_valid_subscription_redirected_to_dashboard()
     {
         $user = User::create([
             'name' => 'Active User',
@@ -154,6 +154,8 @@ class LoginTest extends TestCase
 
         Subscription::create([
             'user_id' => $user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $user->id,
             'plan_id' => $plan->id,
             'name' => 'main',
             'status' => 'active',
@@ -168,7 +170,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function magic_link_can_login_user()
+    public function test_magic_link_can_login_user()
     {
         $user = User::create([
             'name' => 'Magic User',
@@ -180,7 +182,7 @@ class LoginTest extends TestCase
         $token = 'magic-token-abc123';
         MagicLink::create([
             'email' => 'magic@example.com',
-            'token' => hash('sha256', $token),
+            'token' => $token,
             'expires_at' => now()->addMinutes(15),
         ]);
 
@@ -202,7 +204,7 @@ class LoginTest extends TestCase
     }
 
     /** @test */
-    public function magic_link_cannot_be_reused()
+    public function test_magic_link_cannot_be_reused()
     {
         $user = User::create([
             'name' => 'Magic User',
@@ -214,7 +216,7 @@ class LoginTest extends TestCase
         $token = 'magic-token-abc123';
         MagicLink::create([
             'email' => 'magic@example.com',
-            'token' => hash('sha256', $token),
+            'token' => $token,
             'expires_at' => now()->addMinutes(15),
             'used_at' => now()->subMinutes(1), // already used
         ]);

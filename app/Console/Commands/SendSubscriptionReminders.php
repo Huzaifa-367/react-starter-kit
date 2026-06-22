@@ -33,7 +33,7 @@ class SendSubscriptionReminders extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Starting SaaS daily maintenance tasks...');
 
@@ -79,8 +79,11 @@ class SendSubscriptionReminders extends Command
             ->lazy(1000)
             ->each(function ($sub) use ($subManager) {
                 $sub->update(['status' => 'expired']);
-                $subManager->subscribeTo($sub->user, \App\Models\Plan::where('price', 0)->first() ?: \App\Models\Plan::first());
-                \App\Services\NotificationDispatcher::dispatch($sub->user, 'subscription_expired');
+                $user = $sub->user;
+                if ($user instanceof User) {
+                    $subManager->subscribeTo($user, \App\Models\Plan::where('price', 0)->first() ?: \App\Models\Plan::first());
+                    \App\Services\NotificationDispatcher::dispatch($user, 'subscription_expired');
+                }
             });
 
         // 6. Scheduled broadcasts -> status=scheduled AND scheduled_at <= now()
@@ -105,7 +108,7 @@ class SendSubscriptionReminders extends Command
             ->each(function ($usage) {
                 $feature = \App\Models\Feature::find($usage->feature_id);
                 $resetAt = null;
-                if ($feature) {
+                if ($feature instanceof \App\Models\Feature) {
                     if ($feature->resettable_period === 'daily') {
                         $resetAt = Carbon::now()->addDay();
                     } elseif ($feature->resettable_period === 'weekly') {
@@ -149,7 +152,7 @@ class SendSubscriptionReminders extends Command
             ->where('deleted_at', '<', $now->copy()->subDays(30))
             ->lazy(1000)
             ->each(function ($user) {
-                $stripeSecret = \App\Models\Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+                $stripeSecret = \App\Models\Setting::get('stripe_secret') ?: config('services.stripe.secret');
                 if ($user->stripe_id && !empty($stripeSecret)) {
                     try {
                         \Stripe\Stripe::setApiKey($stripeSecret);
@@ -162,5 +165,6 @@ class SendSubscriptionReminders extends Command
             });
 
         $this->info('SaaS daily maintenance tasks completed successfully.');
+        return 0;
     }
 }

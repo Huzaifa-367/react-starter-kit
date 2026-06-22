@@ -7,6 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property int $id
+ * @property int|null $user_id
+ * @property string|null $subject_type
+ * @property int|null $subject_id
+ * @property string $event
+ * @property string|null $description
+ * @property array|null $old_values
+ * @property array|null $new_values
+ * @property string|null $ip_address
+ * @property string|null $user_agent
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property User|null $user
+ */
 class ActivityLog extends Model
 {
     use HasFactory;

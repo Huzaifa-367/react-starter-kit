@@ -184,6 +184,7 @@ class AdminUserController extends Controller
         ]);
 
         $plan = Plan::findOrFail($request->plan_id);
+        assert($plan instanceof Plan);
         
         $subManager = new SubscriptionManager();
         $subManager->subscribeTo($user, $plan);
@@ -200,7 +201,7 @@ class AdminUserController extends Controller
     {
         // Cancel active subscriptions immediately
         $sub = $user->subscriptions()->where('status', 'active')->first();
-        if ($sub) {
+        if ($sub instanceof \App\Models\Subscription) {
             try {
                 $subManager = new SubscriptionManager();
                 $subManager->cancelImmediately($sub);
@@ -346,13 +347,16 @@ class AdminUserController extends Controller
             $roleName = $request->role;
             foreach ($userIds as $id) {
                 $u = User::find($id);
-                if ($u) {
+                if ($u instanceof User) {
                     $u->syncRoles([$roleName]);
                 }
             }
         } elseif ($action === 'export') {
             if (class_exists(\App\Jobs\BulkUserExportJob::class)) {
-                \App\Jobs\BulkUserExportJob::dispatch($userIds, Auth::id());
+                $admin = Auth::user();
+                if ($admin instanceof User) {
+                    \App\Jobs\BulkUserExportJob::dispatch($admin, $userIds);
+                }
             }
             return back()->with('status', 'Bulk user export has been queued.');
         }
@@ -367,7 +371,10 @@ class AdminUserController extends Controller
     {
         $userIds = User::pluck('id')->toArray();
         if (class_exists(\App\Jobs\BulkUserExportJob::class)) {
-            \App\Jobs\BulkUserExportJob::dispatch($userIds, Auth::id());
+            $admin = Auth::user();
+            if ($admin instanceof User) {
+                \App\Jobs\BulkUserExportJob::dispatch($admin, $userIds);
+            }
         }
         return back()->with('status', 'User export has been queued.');
     }

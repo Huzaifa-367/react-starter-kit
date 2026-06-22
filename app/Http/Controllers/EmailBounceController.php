@@ -14,9 +14,9 @@ class EmailBounceController extends Controller
     /**
      * Handle incoming email bounce webhook.
      */
-    public function handle(Request $request)
+    public function handle(Request $request): \Illuminate\Http\JsonResponse
     {
-        $mailProvider = Setting::get('mail_provider') ?: env('MAIL_MAILER', 'smtp');
+        $mailProvider = Setting::get('mail_provider') ?: config('mail.default', 'smtp');
         $payload = $request->all();
 
         $bouncedEmails = [];

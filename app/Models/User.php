@@ -172,4 +172,9 @@ class User extends Authenticatable implements PasskeyUser
     {
         return $this->isStaff() ? '/admin/dashboard' : '/dashboard';
     }
+
+    public function hasBouncedEmail(): bool
+    {
+        return $this->email_bounced_at !== null;
+    }
 }

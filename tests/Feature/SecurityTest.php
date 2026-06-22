@@ -21,16 +21,19 @@ class SecurityTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(\Database\Seeders\PermissionSeeder::class);
+
         $this->user = User::create([
             'name' => 'Secure User',
             'email' => 'security@example.com',
             'password' => Hash::make('P@ssword123!'),
             'email_verified_at' => now(),
         ]);
+        $this->user->assignRole('User (Free)');
     }
 
     /** @test */
-    public function email_bounce_webhook_marks_user_email_as_bounced()
+    public function test_email_bounce_webhook_marks_user_email_as_bounced()
     {
         $payload = [
             'mail_provider' => 'mailtrap',
@@ -50,7 +53,7 @@ class SecurityTest extends TestCase
     }
 
     /** @test */
-    public function ip_firewall_blocks_blocked_ip_rules()
+    public function test_ip_firewall_blocks_blocked_ip_rules()
     {
         // Add a block rule
         IpRule::create([
@@ -69,7 +72,7 @@ class SecurityTest extends TestCase
     }
 
     /** @test */
-    public function ip_firewall_allows_active_ip_rules()
+    public function test_ip_firewall_allows_active_ip_rules()
     {
         IpRule::create([
             'ip' => '198.51.100.4',
@@ -87,7 +90,7 @@ class SecurityTest extends TestCase
     }
 
     /** @test */
-    public function password_history_prevents_password_reuse()
+    public function test_password_history_prevents_password_reuse()
     {
         $this->actingAs($this->user);
 
@@ -98,7 +101,7 @@ class SecurityTest extends TestCase
         ]);
 
         // Attempting to change password to the same password
-        $response = $this->put('/user/password', [
+        $response = $this->put('/settings/password', [
             'current_password' => 'P@ssword123!',
             'password' => 'P@ssword123!',
             'password_confirmation' => 'P@ssword123!',
@@ -108,7 +111,7 @@ class SecurityTest extends TestCase
     }
 
     /** @test */
-    public function webhook_idempotency_prevents_reprocessing_duplicate_event_ids()
+    public function test_webhook_idempotency_prevents_reprocessing_duplicate_event_ids()
     {
         // Log event_id as processed
         WebhookLog::create([

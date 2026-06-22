@@ -54,6 +54,8 @@ class FeatureLimitTest extends TestCase
 
         $this->sub = Subscription::create([
             'user_id' => $this->user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
             'plan_id' => $this->plan->id,
             'name' => 'main',
             'status' => 'active',
@@ -61,6 +63,9 @@ class FeatureLimitTest extends TestCase
 
         $this->usage = SubscriptionUsage::create([
             'subscription_id' => $this->sub->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
+            'feature_id' => $this->feature->id,
             'feature_slug' => 'projects',
             'used' => 0,
         ]);
@@ -75,14 +80,14 @@ class FeatureLimitTest extends TestCase
     }
 
     /** @test */
-    public function can_use_feature_when_under_limit()
+    public function test_can_use_feature_when_under_limit()
     {
         $this->assertTrue($this->user->canUseFeature('projects'));
         $this->assertEquals(2, $this->user->getFeatureRemaining('projects'));
     }
 
     /** @test */
-    public function consume_feature_increments_used_count_and_clears_cache()
+    public function test_consume_feature_increments_used_count_and_clears_cache()
     {
         $this->user->consumeFeature('projects', 1);
 
@@ -97,7 +102,7 @@ class FeatureLimitTest extends TestCase
     }
 
     /** @test */
-    public function cannot_use_feature_when_limit_reached()
+    public function test_cannot_use_feature_when_limit_reached()
     {
         $this->user->consumeFeature('projects', 2);
 
@@ -106,7 +111,7 @@ class FeatureLimitTest extends TestCase
     }
 
     /** @test */
-    public function feature_gate_middleware_allows_access_under_limit()
+    public function test_feature_gate_middleware_allows_access_under_limit()
     {
         $this->actingAs($this->user);
 
@@ -117,14 +122,14 @@ class FeatureLimitTest extends TestCase
     }
 
     /** @test */
-    public function feature_gate_middleware_blocks_access_when_limit_exceeded()
+    public function test_feature_gate_middleware_blocks_access_when_limit_exceeded()
     {
         $this->actingAs($this->user);
 
         // Exhaust limit
         $this->user->consumeFeature('projects', 2);
 
-        $response = $this->get('/test-feature-gate');
+        $response = $this->getJson('/test-feature-gate');
 
         $response->assertStatus(403);
     }

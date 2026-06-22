@@ -16,7 +16,7 @@ class CouponController extends Controller
     /**
      * Display a listing of the coupons.
      */
-    public function index()
+    public function index(): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
     {
         $coupons = Coupon::latest()->paginate(15);
 
@@ -32,7 +32,7 @@ class CouponController extends Controller
     /**
      * Store a newly created coupon in storage and sync with Stripe.
      */
-    public function store(Request $request)
+    public function store(Request $request): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
     {
         $request->validate([
             'code' => ['required', 'string', 'max:50', 'unique:coupons,code'],
@@ -44,7 +44,7 @@ class CouponController extends Controller
             'valid_until' => ['nullable', 'date', 'after:today'],
         ]);
 
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
         $stripeCouponId = null;
 
         if ($stripeSecret) {
@@ -113,7 +113,7 @@ class CouponController extends Controller
     /**
      * Display the specified coupon.
      */
-    public function show(Coupon $coupon)
+    public function show(Coupon $coupon): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
     {
         if (request()->wantsJson()) {
             return response()->json($coupon);
@@ -127,7 +127,7 @@ class CouponController extends Controller
     /**
      * Update the specified coupon (only settings, as Stripe coupons are immutable).
      */
-    public function update(Request $request, Coupon $coupon)
+    public function update(Request $request, Coupon $coupon): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
     {
         $request->validate([
             'is_active' => ['boolean'],
@@ -151,7 +151,7 @@ class CouponController extends Controller
     /**
      * Toggle the active state of the coupon.
      */
-    public function toggle(Coupon $coupon)
+    public function toggle(Coupon $coupon): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
     {
         $coupon->update([
             'is_active' => !$coupon->is_active,
@@ -171,9 +171,9 @@ class CouponController extends Controller
     /**
      * Remove the specified coupon from storage and Stripe.
      */
-    public function destroy(Coupon $coupon)
+    public function destroy(Coupon $coupon): \Symfony\Component\HttpFoundation\Response|\Illuminate\Http\JsonResponse
     {
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
 
         if ($stripeSecret && $coupon->stripe_coupon_id) {
             \Stripe\Stripe::setApiKey($stripeSecret);

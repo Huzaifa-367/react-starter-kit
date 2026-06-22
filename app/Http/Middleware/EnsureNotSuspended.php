@@ -14,8 +14,9 @@ class EnsureNotSuspended
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (Auth::check() && Auth::user()->is_suspended) {
-            $reason = Auth::user()->suspended_reason ?? 'Your account has been suspended.';
+        $user = Auth::user();
+        if ($user instanceof \App\Models\User && $user->is_suspended) {
+            $reason = $user->suspended_reason ?? 'Your account has been suspended.';
 
             Auth::logout();
 

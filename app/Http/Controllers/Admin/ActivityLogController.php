@@ -82,13 +82,16 @@ class ActivityLogController extends Controller
 
         $callback = function () use ($query) {
             $file = fopen('php://output', 'w');
+            if ($file === false) {
+                return;
+            }
             fputcsv($file, ['ID', 'User', 'Event', 'Subject Type', 'Subject ID', 'IP Address', 'User Agent', 'Date']);
 
             $query->chunk(500, function ($logs) use ($file) {
                 foreach ($logs as $log) {
                     fputcsv($file, [
                         $log->id,
-                        $log->user?->email ?? 'System',
+                        $log->user->email ?? 'System',
                         $log->event,
                         $log->subject_type ?? 'N/A',
                         $log->subject_id ?? 'N/A',

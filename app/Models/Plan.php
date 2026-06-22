@@ -8,6 +8,25 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property float $price
+ * @property string $currency
+ * @property string $billing_period
+ * @property int|null $trial_days
+ * @property int|null $grace_days
+ * @property int|null $sort_order
+ * @property bool $is_active
+ * @property string|null $stripe_product_id
+ * @property string|null $stripe_price_id
+ * @property array|null $metadata
+ * @property \Carbon\Carbon $created_at
+ * @property \Carbon\Carbon $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection|Feature[] $features
+ */
 class Plan extends Model
 {
     use HasFactory;

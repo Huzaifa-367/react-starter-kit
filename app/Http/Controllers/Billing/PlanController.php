@@ -37,7 +37,7 @@ class PlanController extends Controller
     /**
      * Display the billing dashboard.
      */
-    public function dashboard(Request $request)
+    public function dashboard(Request $request): \Inertia\Response|\Illuminate\Http\RedirectResponse
     {
         $user = $request->user();
         $sub = $user->getActiveSubscription();
@@ -72,7 +72,7 @@ class PlanController extends Controller
         $invoices = [];
         if ($user->stripe_id) {
             try {
-                $stripeSecret = config('services.stripe.secret') ?: env('STRIPE_SECRET');
+                $stripeSecret = config('services.stripe.secret');
                 if ($stripeSecret) {
                     Stripe::setApiKey($stripeSecret);
                     $stripeInvoices = StripeInvoice::all([

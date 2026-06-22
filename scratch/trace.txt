@@ -1,0 +1,15 @@
+Call to a member function all() on array
+#0 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/laravel/framework/src/Illuminate/Testing/TestResponseAssert.php(47): Illuminate\Testing\TestResponseAssert->injectResponseContext(Object(PHPUnit\Framework\ExpectationFailedException))
+#1 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/laravel/framework/src/Illuminate/Testing/TestResponse.php(176): Illuminate\Testing\TestResponseAssert->__call('assertSame', Array)
+#2 /Users/huzai/Documents/GitHub/laravel-subscription/tests/Feature/LoginTest.php(37): Illuminate\Testing\TestResponse->assertStatus(403)
+#3 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/Framework/TestCase.php(1318): Tests\Feature\LoginTest->test_suspended_user_cannot_login()
+#4 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/Framework/TestCase.php(1355): PHPUnit\Framework\TestCase->invokeTestMethod('test_suspended_...', Array)
+#5 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/Framework/TestCase.php(521): PHPUnit\Framework\TestCase->runTest()
+#6 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/Framework/TestRunner/TestRunner.php(99): PHPUnit\Framework\TestCase->runBare()
+#7 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/Framework/TestCase.php(361): PHPUnit\Framework\TestRunner->run(Object(Tests\Feature\LoginTest))
+#8 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/Framework/TestSuite.php(374): PHPUnit\Framework\TestCase->run()
+#9 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/TextUI/TestRunner.php(64): PHPUnit\Framework\TestSuite->run()
+#10 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/src/TextUI/Application.php(229): PHPUnit\TextUI\TestRunner->run(Object(PHPUnit\TextUI\Configuration\Configuration), Object(PHPUnit\Runner\ResultCache\DefaultResultCache), Object(PHPUnit\Framework\TestSuite))
+#11 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/phpunit/phpunit/phpunit(104): PHPUnit\TextUI\Application->run(Array)
+#12 /Users/huzai/Documents/GitHub/laravel-subscription/vendor/bin/phpunit(122): include('/Users/huzai/Do...')
+#13 {main}

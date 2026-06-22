@@ -32,18 +32,18 @@ class AdminDashboardController extends Controller
         $recentUsers = User::latest()
             ->take(5)
             ->get(['id', 'name', 'email', 'created_at'])
-            ->map(fn($user) => [
+            ->map(fn(User $user) => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
-                'created_at' => $user->created_at->toDateString(),
+                'created_at' => $user->created_at?->toDateString() ?? '',
             ]);
 
         $recentActivities = ActivityLog::with('user')
             ->latest()
             ->take(5)
             ->get()
-            ->map(fn($log) => [
+            ->map(fn(ActivityLog $log) => [
                 'id' => $log->id,
                 'description' => $log->description ?: $log->event,
                 'user_name' => $log->user ? $log->user->name : 'System',

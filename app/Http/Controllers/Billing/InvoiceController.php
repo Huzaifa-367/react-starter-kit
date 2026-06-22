@@ -15,12 +15,12 @@ class InvoiceController extends Controller
     /**
      * Download the specified invoice as a PDF.
      */
-    public function download(Request $request, string $invoiceId)
+    public function download(Request $request, string $invoiceId): \Symfony\Component\HttpFoundation\Response
     {
         $user = $request->user();
 
         // Get Stripe secret key
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
         if (!$stripeSecret) {
             abort(500, 'Stripe is not configured.');
         }

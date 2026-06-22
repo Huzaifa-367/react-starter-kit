@@ -58,6 +58,8 @@ class PerformanceTest extends TestCase
 
         $sub = Subscription::create([
             'user_id' => $this->user->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
             'plan_id' => $this->plan->id,
             'name' => 'main',
             'status' => 'active',
@@ -65,16 +67,21 @@ class PerformanceTest extends TestCase
 
         SubscriptionUsage::create([
             'subscription_id' => $sub->id,
+            'subscribable_type' => User::class,
+            'subscribable_id' => $this->user->id,
+            'feature_id' => $this->feature->id,
             'feature_slug' => 'api_calls',
             'used' => 10,
         ]);
     }
 
     /** @test */
-    public function subscription_checks_are_fully_cached_and_cause_zero_database_queries()
+    public function test_subscription_checks_are_fully_cached_and_cause_zero_database_queries()
     {
         // First call populates cache
         $this->user->hasValidSubscription();
+        $this->user->getFeatureLimit('api_calls');
+        $this->user->getFeatureUsage('api_calls');
 
         // Count queries in second call
         DB::enableQueryLog();
@@ -90,7 +97,7 @@ class PerformanceTest extends TestCase
     }
 
     /** @test */
-    public function settings_get_methods_are_fully_cached_and_cause_zero_database_queries()
+    public function test_settings_get_methods_are_fully_cached_and_cause_zero_database_queries()
     {
         Setting::create([
             'key' => 'app_currency',

@@ -59,13 +59,11 @@ class LoginController extends Controller
                 'ip_address' => $request->ip(),
                 'user_agent' => substr($request->userAgent(), 0, 500),
                 'login_at' => now(),
-                'status' => 'blocked',
-                'failure_reason' => 'Account is suspended.',
+                'status' => 'failed',
+                'failure_reason' => 'suspended',
             ]);
 
-            throw ValidationException::withMessages([
-                'email' => "Your account has been suspended. Reason: {$user->suspended_reason}",
-            ]);
+            abort(403, "Your account has been suspended. Reason: {$user->suspended_reason}");
         }
 
         // Attempt login

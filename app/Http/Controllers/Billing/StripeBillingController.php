@@ -25,7 +25,7 @@ class StripeBillingController extends Controller
     /**
      * Create a new Stripe Checkout Session.
      */
-    public function checkoutSession(Request $request)
+    public function checkoutSession(Request $request): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
     {
         $request->validate([
             'plan_id' => ['required', 'exists:plans,id'],
@@ -48,7 +48,7 @@ class StripeBillingController extends Controller
         }
 
         // Get Stripe secret key
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
         if (!$stripeSecret) {
             abort(500, 'Stripe is not configured.');
         }
@@ -122,7 +122,7 @@ class StripeBillingController extends Controller
     /**
      * Preview proration details when upgrading/downgrading.
      */
-    public function previewProration(Request $request)
+    public function previewProration(Request $request): \Illuminate\Http\JsonResponse
     {
         $request->validate([
             'plan_id' => ['required', 'exists:plans,id'],
@@ -144,7 +144,7 @@ class StripeBillingController extends Controller
         $newPlan = Plan::findOrFail($request->plan_id);
         $newPriceId = $newPlan->stripe_price_id;
 
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
         if (!$stripeSecret || !$newPriceId) {
             return response()->json([
                 'credit_applied' => '$0.00',
@@ -188,7 +188,7 @@ class StripeBillingController extends Controller
     /**
      * Generate customer billing portal link.
      */
-    public function billingPortal(Request $request)
+    public function billingPortal(Request $request): \Illuminate\Http\JsonResponse
     {
         $user = $request->user();
 
@@ -196,7 +196,7 @@ class StripeBillingController extends Controller
             return response()->json(['error' => 'No billing history found.'], 400);
         }
 
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
         if (!$stripeSecret) {
             return response()->json(['error' => 'Stripe is not configured.'], 500);
         }
@@ -218,13 +218,13 @@ class StripeBillingController extends Controller
     /**
      * Confirm a successful checkout redirect.
      */
-    public function checkoutSuccess(Request $request)
+    public function checkoutSuccess(Request $request): \Illuminate\Http\RedirectResponse
     {
         $sessionId = $request->query('session_id');
 
         if ($sessionId) {
             try {
-                $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+                $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
                 Stripe::setApiKey($stripeSecret);
 
                 $session = StripeCheckoutSession::retrieve($sessionId);
@@ -304,14 +304,14 @@ class StripeBillingController extends Controller
     /**
      * Handle incoming Stripe webhooks.
      */
-    public function handleWebhook(Request $request)
+    public function handleWebhook(Request $request): \Illuminate\Http\JsonResponse
     {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
-        $endpointSecret = Setting::get('stripe_webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET');
+        $endpointSecret = Setting::get('stripe_webhook_secret') ?: config('services.stripe.webhook_secret');
 
         try {
-            $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+            $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
             Stripe::setApiKey($stripeSecret);
 
             if ($endpointSecret && $sigHeader) {

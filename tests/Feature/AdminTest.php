@@ -44,7 +44,7 @@ class AdminTest extends TestCase
     }
 
     /** @test */
-    public function administrator_can_suspend_user_and_kill_active_sessions()
+    public function test_administrator_can_suspend_user_and_kill_active_sessions()
     {
         $this->actingAs($this->admin);
 
@@ -81,7 +81,7 @@ class AdminTest extends TestCase
     }
 
     /** @test */
-    public function administrator_can_unsuspend_user()
+    public function test_administrator_can_unsuspend_user()
     {
         $this->customer->update([
             'is_suspended' => true,
@@ -107,7 +107,7 @@ class AdminTest extends TestCase
     }
 
     /** @test */
-    public function administrator_can_impersonate_user_and_stop_impersonation()
+    public function test_administrator_can_impersonate_user_and_stop_impersonation()
     {
         $this->actingAs($this->admin);
 
@@ -130,7 +130,7 @@ class AdminTest extends TestCase
     }
 
     /** @test */
-    public function administrative_settings_saves_and_encrypts_secrets()
+    public function test_administrative_settings_saves_and_encrypts_secrets()
     {
         $this->actingAs($this->admin);
 

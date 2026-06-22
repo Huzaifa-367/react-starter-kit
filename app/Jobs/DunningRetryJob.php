@@ -47,7 +47,7 @@ class DunningRetryJob implements ShouldQueue
             return;
         }
 
-        $stripeSecret = Setting::get('stripe_secret') ?: env('STRIPE_SECRET');
+        $stripeSecret = Setting::get('stripe_secret') ?: config('services.stripe.secret');
         if (empty($stripeSecret)) {
             Log::error("Stripe secret key missing. Cannot execute DunningRetryJob.");
             return;
@@ -79,7 +79,10 @@ class DunningRetryJob implements ShouldQueue
                     'next_retry_at' => null,
                 ]);
 
-                NotificationDispatcher::dispatch($sub->user, 'subscription_renewed');
+                $user = $sub->user;
+                if ($user instanceof \App\Models\User) {
+                    NotificationDispatcher::dispatch($user, 'subscription_renewed');
+                }
             }
         } catch (\Exception $e) {
             Log::warning("Dunning payment retry failed for subscription {$sub->id}: " . $e->getMessage());
@@ -101,12 +104,14 @@ class DunningRetryJob implements ShouldQueue
                     'next_retry_at' => null,
                 ]);
 
-                if (class_exists(\App\Services\SubscriptionManager::class)) {
-                    $subManager = new \App\Services\SubscriptionManager();
-                    $subManager->subscribeTo($sub->user, \App\Models\Plan::where('price', 0)->first() ?: \App\Models\Plan::first());
+                $user = $sub->user;
+                if ($user instanceof \App\Models\User) {
+                    if (class_exists(\App\Services\SubscriptionManager::class)) {
+                        $subManager = new \App\Services\SubscriptionManager();
+                        $subManager->subscribeTo($user, \App\Models\Plan::where('price', 0)->first() ?: \App\Models\Plan::first());
+                    }
+                    NotificationDispatcher::dispatch($user, 'subscription_expired');
                 }
-
-                NotificationDispatcher::dispatch($sub->user, 'subscription_expired');
                 return;
             }
 
@@ -115,7 +120,10 @@ class DunningRetryJob implements ShouldQueue
                 'next_retry_at' => $nextRetryAt,
             ]);
 
-            NotificationDispatcher::dispatch($sub->user, 'dunning_retry');
+            $user = $sub->user;
+            if ($user instanceof \App\Models\User) {
+                NotificationDispatcher::dispatch($user, 'dunning_retry');
+            }
         }
     }
 }
